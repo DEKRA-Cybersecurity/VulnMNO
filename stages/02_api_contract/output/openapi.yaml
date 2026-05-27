@@ -1,0 +1,1631 @@
+openapi: 3.1.0
+info:
+  title: VulnMNO API
+  version: 0.1.0-phase1
+  description: |
+    HTTP API for the VulnMNO mobile self-care platform.
+    Single source of truth for backend (stages 03–04) and Android client (stages 05–06).
+    See `02_api_contract/output/endpoints.md` for the human-readable index,
+    `02_api_contract/output/auth-model.md` for the auth flow, and
+    `02_api_contract/output/error-codes.md` for the master error enum.
+
+servers:
+  - url: http://localhost:8000
+    description: Local development (uvicorn on host)
+  - url: http://10.0.2.2:8000
+    description: Android emulator → host loopback
+
+tags:
+  - name: auth
+  - name: customers
+  - name: accounts
+  - name: shop
+  - name: plans
+  - name: usage
+  - name: support
+  - name: notifications
+
+security:
+  - bearerAuth: []
+
+paths:
+
+  # -------- auth --------
+  /api/auth/login:
+    post:
+      tags: [auth]
+      operationId: ep001_login
+      security: []
+      summary: EP-001 Authenticate with phone + password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Either a TokenPair (non-OTP customers) or an OtpChallenge.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/InvalidCredentials' }
+
+  /api/auth/logout:
+    post:
+      tags: [auth]
+      operationId: ep002_logout
+      summary: EP-002 Revoke the refresh token bound to this access token
+      responses:
+        '204': { description: Logged out. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/auth/refresh:
+    post:
+      tags: [auth]
+      operationId: ep003_refresh
+      security: []
+      summary: EP-003 Exchange a refresh token for a new TokenPair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshRequest' }
+      responses:
+        '200':
+          description: New TokenPair. The presented refresh token is now revoked.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/RefreshFailed' }
+
+  /api/auth/otp/verify:
+    post:
+      tags: [auth]
+      operationId: ep004_otp_verify
+      security: []
+      summary: EP-004 Complete an OTP challenge and receive a TokenPair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OtpVerifyRequest' }
+      responses:
+        '200':
+          description: TokenPair issued.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/OtpInvalid' }
+
+  /api/auth/password-reset/request:
+    post:
+      tags: [auth]
+      operationId: ep005_password_reset_request
+      security: []
+      summary: EP-005 Request a password reset by SMS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PasswordResetRequest' }
+      responses:
+        '204': { description: 'Always returned, even for unknown MSISDNs.' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+
+  /api/auth/password-reset/confirm:
+    post:
+      tags: [auth]
+      operationId: ep006_password_reset_confirm
+      security: []
+      summary: EP-006 Confirm a password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PasswordResetConfirm' }
+      responses:
+        '204': { description: Password updated. All refresh tokens revoked. }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/OtpInvalid' }
+
+  # -------- customers --------
+  /api/customers/me:
+    get:
+      tags: [customers]
+      operationId: ep010_get_me
+      summary: EP-010 Retrieve own profile
+      responses:
+        '200':
+          description: Profile.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerRead' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/customers/me/contact-details:
+    put:
+      tags: [customers]
+      operationId: ep011_update_contact_details
+      summary: EP-011 Update contact details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContactDetailsUpdate' }
+      responses:
+        '200':
+          description: Updated profile.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerRead' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/customers/me/lines:
+    get:
+      tags: [customers]
+      operationId: ep012_list_lines
+      summary: EP-012 List own mobile lines
+      parameters:
+        - { $ref: '#/components/parameters/LimitParam' }
+        - { $ref: '#/components/parameters/CursorParam' }
+      responses:
+        '200':
+          description: Paginated mobile lines.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedMobileLines' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/customers/me/sim-profile:
+    get:
+      tags: [customers]
+      operationId: ep013_get_sim_profile
+      summary: EP-013 Get own SIM/eSIM profile
+      responses:
+        '200':
+          description: SIM profile.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimProfileRead' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # -------- accounts --------
+  /api/accounts/me/balance:
+    get:
+      tags: [accounts]
+      operationId: ep020_get_balance
+      summary: EP-020 Get current balance
+      responses:
+        '200':
+          description: Current balance.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BalanceRead' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/accounts/me/transactions:
+    get:
+      tags: [accounts]
+      operationId: ep021_list_transactions
+      summary: EP-021 List transactions
+      parameters:
+        - { $ref: '#/components/parameters/LimitParam' }
+        - { $ref: '#/components/parameters/CursorParam' }
+      responses:
+        '200':
+          description: Paginated transactions.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedTransactions' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/accounts/me/topup:
+    post:
+      tags: [accounts]
+      operationId: ep022_topup
+      summary: EP-022 Top up the prepaid wallet
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TopupRequest' }
+      responses:
+        '201':
+          description: Top-up transaction created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransactionRead' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/IdempotencyConflict' }
+
+  /api/accounts/me/invoices:
+    get:
+      tags: [accounts]
+      operationId: ep023_list_invoices
+      summary: EP-023 List invoices
+      parameters:
+        - { $ref: '#/components/parameters/LimitParam' }
+        - { $ref: '#/components/parameters/CursorParam' }
+      responses:
+        '200':
+          description: Paginated invoice summaries.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedInvoiceSummaries' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/accounts/me/invoices/{invoiceId}:
+    get:
+      tags: [accounts]
+      operationId: ep024_get_invoice
+      summary: EP-024 Get invoice detail
+      parameters:
+        - { $ref: '#/components/parameters/InvoiceId' }
+      responses:
+        '200':
+          description: Invoice with line items.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InvoiceRead' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/accounts/me/invoices/{invoiceId}/download:
+    get:
+      tags: [accounts]
+      operationId: ep025_download_invoice
+      summary: EP-025 Download invoice as PDF
+      parameters:
+        - { $ref: '#/components/parameters/InvoiceId' }
+      responses:
+        '200':
+          description: PDF body.
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/accounts/me/refunds:
+    post:
+      tags: [accounts]
+      operationId: ep026_request_refund
+      summary: EP-026 Request a refund (creates a tracking ticket)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefundRequest' }
+      responses:
+        '202':
+          description: Refund request accepted; a ticket has been opened.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RefundCreated' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # -------- shop --------
+  /api/shop/products:
+    get:
+      tags: [shop]
+      operationId: ep030_list_products
+      summary: EP-030 List products
+      parameters:
+        - { $ref: '#/components/parameters/LimitParam' }
+        - { $ref: '#/components/parameters/CursorParam' }
+        - in: query
+          name: category
+          required: false
+          schema: { type: string }
+        - in: query
+          name: featured
+          required: false
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Paginated products.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedProducts' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/shop/products/{productId}:
+    get:
+      tags: [shop]
+      operationId: ep031_get_product
+      summary: EP-031 Get product detail
+      parameters:
+        - { $ref: '#/components/parameters/ProductId' }
+      responses:
+        '200':
+          description: Product.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductRead' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/shop/promotions/apply:
+    post:
+      tags: [shop]
+      operationId: ep032_apply_promo
+      summary: EP-032 Compute the final price after applying a promotion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApplyPromoRequest' }
+      responses:
+        '200':
+          description: Promotion application result.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PromoApplicationRead' }
+        '400': { $ref: '#/components/responses/PromoError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/shop/purchases:
+    post:
+      tags: [shop]
+      operationId: ep033_create_purchase
+      summary: EP-033 Create a purchase
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreatePurchaseRequest' }
+      responses:
+        '201':
+          description: Purchase confirmed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PurchaseRead' }
+        '400': { $ref: '#/components/responses/PromoError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/PurchaseConflict' }
+    get:
+      tags: [shop]
+      operationId: ep034_list_purchases
+      summary: EP-034 List purchases
+      parameters:
+        - { $ref: '#/components/parameters/LimitParam' }
+        - { $ref: '#/components/parameters/CursorParam' }
+        - in: query
+          name: status
+          required: false
+          schema: { type: string, enum: [confirmed, cancelled, failed] }
+      responses:
+        '200':
+          description: Paginated purchases.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedPurchases' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/shop/purchases/{purchaseId}:
+    get:
+      tags: [shop]
+      operationId: ep035_get_purchase
+      summary: EP-035 Get purchase detail
+      parameters:
+        - { $ref: '#/components/parameters/PurchaseId' }
+      responses:
+        '200':
+          description: Purchase.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PurchaseRead' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/shop/purchases/{purchaseId}/cancel:
+    post:
+      tags: [shop]
+      operationId: ep036_cancel_purchase
+      summary: EP-036 Cancel a purchase
+      parameters:
+        - { $ref: '#/components/parameters/PurchaseId' }
+      responses:
+        '200':
+          description: Purchase cancelled; refund transaction created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PurchaseRead' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  # -------- plans --------
+  /api/plans/current:
+    get:
+      tags: [plans]
+      operationId: ep040_get_current_plan
+      summary: EP-040 Get current plan
+      responses:
+        '200':
+          description: Current plan.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlanRead' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/plans/available:
+    get:
+      tags: [plans]
+      operationId: ep041_list_available_plans
+      summary: EP-041 List plans available to this customer
+      parameters:
+        - { $ref: '#/components/parameters/LimitParam' }
+        - { $ref: '#/components/parameters/CursorParam' }
+      responses:
+        '200':
+          description: Paginated plans.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedPlans' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/plans/change:
+    post:
+      tags: [plans]
+      operationId: ep042_change_plan
+      summary: EP-042 Change plan (immediate or scheduled)
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PlanChangeRequest' }
+      responses:
+        '200':
+          description: Plan changed immediately.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlanChangeRead' }
+        '202':
+          description: Plan change scheduled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlanChangeRead' }
+        '400': { $ref: '#/components/responses/PlanIneligible' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/PlanChangePending' }
+
+  /api/plans/change/{changeId}/cancel:
+    post:
+      tags: [plans]
+      operationId: ep043_cancel_plan_change
+      summary: EP-043 Cancel a pending plan change
+      parameters:
+        - in: path
+          name: changeId
+          required: true
+          schema: { type: string, pattern: '^PCH-[0-9]+$' }
+      responses:
+        '200':
+          description: Plan change cancelled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlanChangeRead' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/plans/services/add:
+    post:
+      tags: [plans]
+      operationId: ep044_add_service
+      summary: EP-044 Add an optional service to the current plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ServiceToggleRequest' }
+      responses:
+        '200':
+          description: Updated plan view.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlanRead' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/plans/services/remove:
+    post:
+      tags: [plans]
+      operationId: ep045_remove_service
+      summary: EP-045 Remove an optional service from the current plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ServiceToggleRequest' }
+      responses:
+        '200':
+          description: Updated plan view.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlanRead' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  # -------- usage --------
+  /api/usage/calls:
+    get:
+      tags: [usage]
+      operationId: ep050_usage_calls
+      summary: EP-050 List call usage records
+      parameters:
+        - { $ref: '#/components/parameters/FromParam' }
+        - { $ref: '#/components/parameters/ToParam' }
+        - { $ref: '#/components/parameters/LimitParam' }
+        - { $ref: '#/components/parameters/CursorParam' }
+      responses:
+        '200':
+          description: Paginated usage records.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedUsage' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/usage/sms:
+    get:
+      tags: [usage]
+      operationId: ep051_usage_sms
+      summary: EP-051 List SMS usage records
+      parameters:
+        - { $ref: '#/components/parameters/FromParam' }
+        - { $ref: '#/components/parameters/ToParam' }
+        - { $ref: '#/components/parameters/LimitParam' }
+        - { $ref: '#/components/parameters/CursorParam' }
+      responses:
+        '200':
+          description: Paginated usage records.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedUsage' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/usage/data:
+    get:
+      tags: [usage]
+      operationId: ep052_usage_data
+      summary: EP-052 List data usage sessions
+      parameters:
+        - { $ref: '#/components/parameters/FromParam' }
+        - { $ref: '#/components/parameters/ToParam' }
+        - { $ref: '#/components/parameters/LimitParam' }
+        - { $ref: '#/components/parameters/CursorParam' }
+      responses:
+        '200':
+          description: Paginated usage records.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedUsage' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/usage/roaming:
+    get:
+      tags: [usage]
+      operationId: ep053_usage_roaming
+      summary: EP-053 List roaming usage records
+      parameters:
+        - { $ref: '#/components/parameters/FromParam' }
+        - { $ref: '#/components/parameters/ToParam' }
+        - { $ref: '#/components/parameters/LimitParam' }
+        - { $ref: '#/components/parameters/CursorParam' }
+      responses:
+        '200':
+          description: Paginated usage records.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedUsage' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/usage/export:
+    get:
+      tags: [usage]
+      operationId: ep054_usage_export
+      summary: EP-054 Export usage summary
+      parameters:
+        - { $ref: '#/components/parameters/FromParam' }
+        - { $ref: '#/components/parameters/ToParam' }
+        - in: query
+          name: format
+          required: true
+          schema: { type: string, enum: [csv, json] }
+      responses:
+        '200':
+          description: Export body in the requested format.
+          content:
+            text/csv:
+              schema: { type: string }
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/UsageRecordRead' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # -------- support --------
+  /api/support/tickets:
+    post:
+      tags: [support]
+      operationId: ep060_create_ticket
+      summary: EP-060 Create a support ticket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateTicketRequest' }
+      responses:
+        '201':
+          description: Ticket created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TicketRead' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    get:
+      tags: [support]
+      operationId: ep061_list_tickets
+      summary: EP-061 List own tickets
+      parameters:
+        - { $ref: '#/components/parameters/LimitParam' }
+        - { $ref: '#/components/parameters/CursorParam' }
+        - in: query
+          name: status
+          required: false
+          schema: { type: string, enum: [open, pending, closed] }
+      responses:
+        '200':
+          description: Paginated tickets.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedTicketSummaries' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/support/tickets/{ticketId}:
+    get:
+      tags: [support]
+      operationId: ep062_get_ticket
+      summary: EP-062 Get ticket detail (includes messages)
+      parameters:
+        - { $ref: '#/components/parameters/TicketId' }
+      responses:
+        '200':
+          description: Ticket.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TicketRead' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/support/tickets/{ticketId}/messages:
+    post:
+      tags: [support]
+      operationId: ep063_add_ticket_message
+      summary: EP-063 Add a message to a ticket
+      parameters:
+        - { $ref: '#/components/parameters/TicketId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateMessageRequest' }
+      responses:
+        '201':
+          description: Message created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TicketMessageRead' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/TicketClosed' }
+
+  /api/support/tickets/{ticketId}/attachments:
+    post:
+      tags: [support]
+      operationId: ep064_add_ticket_attachment
+      summary: EP-064 Upload an attachment to a ticket (≤ 10 MB)
+      parameters:
+        - { $ref: '#/components/parameters/TicketId' }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Attachment stored.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TicketAttachmentRead' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/TicketClosed' }
+
+  /api/support/tickets/{ticketId}/close:
+    post:
+      tags: [support]
+      operationId: ep065_close_ticket
+      summary: EP-065 Close a ticket
+      parameters:
+        - { $ref: '#/components/parameters/TicketId' }
+      responses:
+        '200':
+          description: Ticket closed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TicketRead' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  # -------- notifications --------
+  /api/notifications:
+    get:
+      tags: [notifications]
+      operationId: ep070_list_notifications
+      summary: EP-070 List notifications
+      parameters:
+        - { $ref: '#/components/parameters/LimitParam' }
+        - { $ref: '#/components/parameters/CursorParam' }
+      responses:
+        '200':
+          description: Paginated notifications.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedNotifications' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/notifications/preferences:
+    post:
+      tags: [notifications]
+      operationId: ep071_update_preferences
+      summary: EP-071 Update notification preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NotificationPreferencesUpdate' }
+      responses:
+        '200':
+          description: Preferences updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationPreferences' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/notifications/device-token:
+    post:
+      tags: [notifications]
+      operationId: ep072_register_device_token
+      summary: EP-072 Register an Android device push token (stub delivery)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeviceTokenRegister' }
+      responses:
+        '204': { description: Token registered. No FCM call in phase 1. }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    LimitParam:
+      in: query
+      name: limit
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    CursorParam:
+      in: query
+      name: cursor
+      required: false
+      schema: { type: string }
+    FromParam:
+      in: query
+      name: from
+      required: false
+      schema: { type: string, format: date-time }
+    ToParam:
+      in: query
+      name: to
+      required: false
+      schema: { type: string, format: date-time }
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: false
+      schema: { type: string, minLength: 1, maxLength: 64 }
+    InvoiceId:
+      in: path
+      name: invoiceId
+      required: true
+      schema: { type: string, pattern: '^INV-[0-9]+$' }
+    ProductId:
+      in: path
+      name: productId
+      required: true
+      schema: { type: string }
+    PurchaseId:
+      in: path
+      name: purchaseId
+      required: true
+      schema: { type: string, pattern: '^PUR-[0-9]+$' }
+    TicketId:
+      in: path
+      name: ticketId
+      required: true
+      schema: { type: string, pattern: '^TCK-[0-9]+$' }
+
+  responses:
+    Unauthorized:
+      description: Missing/invalid/expired bearer token.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    InvalidCredentials:
+      description: Wrong credentials.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    OtpInvalid:
+      description: OTP code wrong, expired, or attempts exhausted.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    RefreshFailed:
+      description: Refresh token expired or revoked.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Resource does not exist or is not owned by the caller.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationFailed:
+      description: Request validation failed.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Action conflicts with current resource state.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    IdempotencyConflict:
+      description: Same Idempotency-Key used with a different body.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    PromoError:
+      description: Promo invalid or ineligible.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    PlanIneligible:
+      description: Target plan ineligible.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    PlanChangePending:
+      description: A pending plan change blocks a new one.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    PurchaseConflict:
+      description: Insufficient balance or idempotency conflict.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    TicketClosed:
+      description: Ticket is closed.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                - UNAUTHENTICATED
+                - TOKEN_EXPIRED
+                - TOKEN_REVOKED
+                - INVALID_CREDENTIALS
+                - OTP_INVALID
+                - NOT_FOUND
+                - VALIDATION_FAILED
+                - RATE_LIMITED
+                - CONFLICT
+                - INTERNAL
+                - PROMO_INVALID
+                - PROMO_INELIGIBLE
+                - INSUFFICIENT_BALANCE
+                - PLAN_INELIGIBLE
+                - PLAN_CHANGE_PENDING
+                - TICKET_CLOSED
+                - IDEMPOTENCY_CONFLICT
+            message: { type: string }
+            details:
+              type: object
+              additionalProperties: true
+
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        currency:
+          type: string
+          enum: [EUR]
+
+    TokenPair:
+      type: object
+      required: [accessToken, refreshToken, expiresIn, tokenType]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresIn:
+          type: integer
+          description: Access token TTL in seconds. Currently 3600.
+        tokenType:
+          type: string
+          enum: [Bearer]
+
+    OtpChallenge:
+      type: object
+      required: [challenge, challengeToken, expiresIn]
+      properties:
+        challenge:
+          type: string
+          enum: [OTP]
+        challengeToken: { type: string }
+        expiresIn:
+          type: integer
+          description: Challenge TTL in seconds. Currently 300.
+
+    LoginRequest:
+      type: object
+      required: [msisdn, password]
+      properties:
+        msisdn: { type: string, pattern: '^\+[0-9]{8,15}$' }
+        password: { type: string, minLength: 8, maxLength: 128 }
+
+    LoginResponse:
+      oneOf:
+        - $ref: '#/components/schemas/TokenPair'
+        - $ref: '#/components/schemas/OtpChallenge'
+      discriminator:
+        propertyName: __kind
+        mapping: {}
+
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string }
+
+    OtpVerifyRequest:
+      type: object
+      required: [challengeToken, code]
+      properties:
+        challengeToken: { type: string }
+        code:
+          type: string
+          pattern: '^[0-9]{6}$'
+
+    PasswordResetRequest:
+      type: object
+      required: [msisdn]
+      properties:
+        msisdn: { type: string, pattern: '^\+[0-9]{8,15}$' }
+
+    PasswordResetConfirm:
+      type: object
+      required: [msisdn, code, newPassword]
+      properties:
+        msisdn: { type: string, pattern: '^\+[0-9]{8,15}$' }
+        code:
+          type: string
+          pattern: '^[0-9]{6}$'
+        newPassword: { type: string, minLength: 8, maxLength: 128 }
+
+    CustomerRead:
+      type: object
+      required: [customerId, name, primaryMsisdn, accountType, status]
+      properties:
+        customerId: { type: string, pattern: '^CUST-[0-9]+$' }
+        name: { type: string }
+        email: { type: string, format: email }
+        primaryMsisdn: { type: string, pattern: '^\+[0-9]{8,15}$' }
+        accountType:
+          type: string
+          enum: [prepaid, postpaid, hybrid]
+        status:
+          type: string
+          enum: [active, suspended, closed]
+        loyaltyTier:
+          type: string
+          enum: [bronze, silver, gold, platinum]
+        billingAddress:
+          $ref: '#/components/schemas/Address'
+
+    Address:
+      type: object
+      properties:
+        line1: { type: string }
+        line2: { type: string, nullable: true }
+        city: { type: string }
+        postalCode: { type: string }
+        country: { type: string, minLength: 2, maxLength: 2 }
+
+    ContactDetailsUpdate:
+      type: object
+      properties:
+        email: { type: string, format: email }
+        billingAddress: { $ref: '#/components/schemas/Address' }
+        notificationPreferences: { $ref: '#/components/schemas/NotificationPreferencesUpdate' }
+
+    MobileLineRead:
+      type: object
+      required: [lineId, msisdn, customerId, status]
+      properties:
+        lineId: { type: string, pattern: '^LINE-[0-9]+$' }
+        msisdn: { type: string, pattern: '^\+[0-9]{8,15}$' }
+        customerId: { type: string, pattern: '^CUST-[0-9]+$' }
+        planId: { type: string, nullable: true }
+        simId: { type: string, nullable: true }
+        status:
+          type: string
+          enum: [active, suspended, terminated]
+        activatedAt: { type: string, format: date-time, nullable: true }
+
+    SimProfileRead:
+      type: object
+      required: [simId, iccid, status, activationDate]
+      properties:
+        simId: { type: string, pattern: '^SIM-[0-9]+$' }
+        iccid: { type: string }
+        imsiAlias: { type: string }
+        type:
+          type: string
+          enum: [physical, esim]
+        status:
+          type: string
+          enum: [active, suspended, swapped]
+        activationDate: { type: string, format: date }
+
+    BalanceRead:
+      type: object
+      required: [accountId, balance, currency, lastUpdated]
+      properties:
+        accountId: { type: string, pattern: '^ACC-[0-9]+$' }
+        balance:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        currency: { type: string, enum: [EUR] }
+        lastUpdated: { type: string, format: date-time }
+
+    TransactionRead:
+      type: object
+      required: [transactionId, accountId, type, amount, currency, timestamp]
+      properties:
+        transactionId: { type: string, pattern: '^TX-[0-9]+$' }
+        accountId: { type: string, pattern: '^ACC-[0-9]+$' }
+        type:
+          type: string
+          enum: [topup, purchase, refund, adjustment, charge]
+        amount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        currency: { type: string, enum: [EUR] }
+        balanceAfter:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        relatedPurchaseId: { type: string, nullable: true }
+        relatedInvoiceId: { type: string, nullable: true }
+        timestamp: { type: string, format: date-time }
+
+    TopupRequest:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+          minimum: 1
+          maximum: 500
+        currency: { type: string, enum: [EUR] }
+
+    InvoiceSummaryRead:
+      type: object
+      required: [invoiceId, accountId, period, totalAmount, currency, status, issuedAt]
+      properties:
+        invoiceId: { type: string, pattern: '^INV-[0-9]+$' }
+        accountId: { type: string, pattern: '^ACC-[0-9]+$' }
+        period: { type: string, description: 'YYYY-MM' }
+        totalAmount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        currency: { type: string, enum: [EUR] }
+        status:
+          type: string
+          enum: [draft, issued, paid, overdue, void]
+        issuedAt: { type: string, format: date-time }
+
+    InvoiceLineItem:
+      type: object
+      required: [description, amount, currency]
+      properties:
+        description: { type: string }
+        amount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        currency: { type: string, enum: [EUR] }
+        relatedProductId: { type: string, nullable: true }
+        relatedPlanId: { type: string, nullable: true }
+
+    InvoiceRead:
+      allOf:
+        - $ref: '#/components/schemas/InvoiceSummaryRead'
+        - type: object
+          required: [lineItems]
+          properties:
+            lineItems:
+              type: array
+              items: { $ref: '#/components/schemas/InvoiceLineItem' }
+
+    RefundRequest:
+      type: object
+      required: [targetType, targetId, reason]
+      properties:
+        targetType:
+          type: string
+          enum: [purchase, invoice]
+        targetId: { type: string }
+        reason: { type: string, minLength: 5, maxLength: 500 }
+
+    RefundCreated:
+      type: object
+      required: [refundId, status, ticketId]
+      properties:
+        refundId: { type: string, pattern: '^REF-[0-9]+$' }
+        status:
+          type: string
+          enum: [pending]
+        ticketId: { type: string, pattern: '^TCK-[0-9]+$' }
+
+    ProductRead:
+      type: object
+      required: [productId, name, category, price, currency]
+      properties:
+        productId: { type: string }
+        name: { type: string }
+        category:
+          type: string
+          enum: [data_bundle, voice_bundle, sms_bundle, roaming, addon, accessory, loyalty, promo]
+        description: { type: string }
+        price:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        currency: { type: string, enum: [EUR] }
+        validityDays: { type: integer, minimum: 1 }
+        eligiblePlans:
+          type: array
+          items: { type: string }
+        featured: { type: boolean }
+        availability:
+          type: string
+          enum: [available, sold_out, hidden]
+
+    ApplyPromoRequest:
+      type: object
+      required: [productId, promoCode]
+      properties:
+        productId: { type: string }
+        promoCode: { type: string, minLength: 1, maxLength: 64 }
+
+    PromoApplicationRead:
+      type: object
+      required: [promotionId, originalPrice, discountAmount, finalPrice, currency]
+      properties:
+        promotionId: { type: string, pattern: '^PROMO-[A-Z0-9-]+$' }
+        description: { type: string }
+        originalPrice:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        discountAmount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        finalPrice:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+          minimum: 0
+        currency: { type: string, enum: [EUR] }
+
+    CreatePurchaseRequest:
+      type: object
+      required: [productId]
+      properties:
+        productId: { type: string }
+        promoCode: { type: string, nullable: true }
+
+    PurchaseRead:
+      type: object
+      required: [purchaseId, customerId, productId, status, finalPrice, currency, createdAt, provisioning]
+      properties:
+        purchaseId: { type: string, pattern: '^PUR-[0-9]+$' }
+        customerId: { type: string, pattern: '^CUST-[0-9]+$' }
+        productId: { type: string }
+        promotionId: { type: string, nullable: true }
+        status:
+          type: string
+          enum: [confirmed, cancelled, failed]
+        originalPrice:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        finalPrice:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        currency: { type: string, enum: [EUR] }
+        createdAt: { type: string, format: date-time }
+        provisioning:
+          type: object
+          required: [status]
+          properties:
+            status:
+              type: string
+              enum: [pending, active, failed]
+            activatedAt: { type: string, format: date-time, nullable: true }
+
+    PlanRead:
+      type: object
+      required: [planId, name, monthlyPrice, currency, dataLimit, voiceLimit]
+      properties:
+        planId: { type: string }
+        name: { type: string }
+        description: { type: string }
+        monthlyPrice:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        currency: { type: string, enum: [EUR] }
+        dataLimit:
+          type: integer
+          description: Monthly data allowance in megabytes. -1 means unlimited.
+        voiceLimit:
+          type: integer
+          description: Monthly voice allowance in minutes. -1 means unlimited.
+        smsLimit:
+          type: integer
+          description: Monthly SMS allowance. -1 means unlimited.
+        category:
+          type: string
+          enum: [prepaid, postpaid, hybrid, business, student, family]
+        activeServices:
+          type: array
+          items: { type: string }
+        validFrom: { type: string, format: date-time, nullable: true }
+
+    PlanChangeRequest:
+      type: object
+      required: [planId, mode]
+      properties:
+        planId: { type: string }
+        mode:
+          type: string
+          enum: [immediate, scheduled]
+        effectiveDate: { type: string, format: date, nullable: true }
+
+    PlanChangeRead:
+      type: object
+      required: [changeId, customerId, fromPlanId, toPlanId, status, mode]
+      properties:
+        changeId: { type: string, pattern: '^PCH-[0-9]+$' }
+        customerId: { type: string, pattern: '^CUST-[0-9]+$' }
+        fromPlanId: { type: string }
+        toPlanId: { type: string }
+        status:
+          type: string
+          enum: [applied, pending, cancelled]
+        mode:
+          type: string
+          enum: [immediate, scheduled]
+        effectiveDate: { type: string, format: date, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    ServiceToggleRequest:
+      type: object
+      required: [serviceId]
+      properties:
+        serviceId: { type: string }
+
+    UsageRecordRead:
+      type: object
+      required: [usageId, lineId, type, startedAt, cost, currency]
+      properties:
+        usageId: { type: string, pattern: '^USG-[0-9]+$' }
+        lineId: { type: string, pattern: '^LINE-[0-9]+$' }
+        type:
+          type: string
+          enum: [call, sms, data, roaming]
+        direction:
+          type: string
+          enum: [incoming, outgoing]
+          nullable: true
+        destination: { type: string, nullable: true }
+        startedAt: { type: string, format: date-time }
+        durationSeconds: { type: integer, nullable: true }
+        volumeMegabytes:
+          type: number
+          format: decimal
+          multipleOf: 0.001
+          nullable: true
+        country: { type: string, nullable: true }
+        networkType: { type: string, nullable: true }
+        roaming: { type: boolean }
+        cost:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        currency: { type: string, enum: [EUR] }
+
+    TicketSummaryRead:
+      type: object
+      required: [ticketId, customerId, topic, status, createdAt]
+      properties:
+        ticketId: { type: string, pattern: '^TCK-[0-9]+$' }
+        customerId: { type: string, pattern: '^CUST-[0-9]+$' }
+        topic:
+          type: string
+          enum: [Billing, Plan, Technical, Purchase, Other]
+        status:
+          type: string
+          enum: [open, pending, closed]
+        createdAt: { type: string, format: date-time }
+        lastUpdatedAt: { type: string, format: date-time }
+
+    TicketRead:
+      allOf:
+        - $ref: '#/components/schemas/TicketSummaryRead'
+        - type: object
+          required: [description, messages]
+          properties:
+            description: { type: string }
+            messages:
+              type: array
+              items: { $ref: '#/components/schemas/TicketMessageRead' }
+            attachments:
+              type: array
+              items: { $ref: '#/components/schemas/TicketAttachmentRead' }
+
+    CreateTicketRequest:
+      type: object
+      required: [topic, description]
+      properties:
+        topic:
+          type: string
+          enum: [Billing, Plan, Technical, Purchase, Other]
+        description: { type: string, minLength: 5, maxLength: 4000 }
+
+    TicketMessageRead:
+      type: object
+      required: [messageId, ticketId, author, body, createdAt]
+      properties:
+        messageId: { type: string, pattern: '^MSG-[0-9]+$' }
+        ticketId: { type: string, pattern: '^TCK-[0-9]+$' }
+        author:
+          type: object
+          required: [role, displayName]
+          properties:
+            role:
+              type: string
+              enum: [customer, agent, system]
+            displayName: { type: string }
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    CreateMessageRequest:
+      type: object
+      required: [body]
+      properties:
+        body: { type: string, minLength: 1, maxLength: 4000 }
+
+    TicketAttachmentRead:
+      type: object
+      required: [attachmentId, ticketId, filename, sizeBytes, contentType, uploadedAt]
+      properties:
+        attachmentId: { type: string, pattern: '^ATT-[0-9]+$' }
+        ticketId: { type: string, pattern: '^TCK-[0-9]+$' }
+        filename: { type: string }
+        sizeBytes: { type: integer, maximum: 10485760 }
+        contentType: { type: string }
+        uploadedAt: { type: string, format: date-time }
+
+    NotificationRead:
+      type: object
+      required: [notificationId, customerId, channel, messageType, body, createdAt, readAt]
+      properties:
+        notificationId: { type: string, pattern: '^NTF-[0-9]+$' }
+        customerId: { type: string, pattern: '^CUST-[0-9]+$' }
+        channel:
+          type: string
+          enum: [push, sms, email, in_app]
+        messageType:
+          type: string
+          enum: [purchase_confirmation, balance_update, plan_change, low_balance, promotion, security, support_update]
+        title: { type: string }
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+        readAt: { type: string, format: date-time, nullable: true }
+
+    NotificationPreferences:
+      type: object
+      required: [push, sms, email, inApp]
+      properties:
+        push: { type: boolean }
+        sms: { type: boolean }
+        email: { type: boolean }
+        inApp: { type: boolean }
+
+    NotificationPreferencesUpdate:
+      type: object
+      properties:
+        push: { type: boolean }
+        sms: { type: boolean }
+        email: { type: boolean }
+        inApp: { type: boolean }
+
+    DeviceTokenRegister:
+      type: object
+      required: [token, platform]
+      properties:
+        token: { type: string, minLength: 10, maxLength: 4096 }
+        platform:
+          type: string
+          enum: [android]
+        appVersion: { type: string }
+
+    # -------- paginated wrappers --------
+
+    PagedProducts:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ProductRead' }
+        nextCursor: { type: string, nullable: true }
+
+    PagedPurchases:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/PurchaseRead' }
+        nextCursor: { type: string, nullable: true }
+
+    PagedPlans:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/PlanRead' }
+        nextCursor: { type: string, nullable: true }
+
+    PagedTransactions:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/TransactionRead' }
+        nextCursor: { type: string, nullable: true }
+
+    PagedInvoiceSummaries:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/InvoiceSummaryRead' }
+        nextCursor: { type: string, nullable: true }
+
+    PagedMobileLines:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/MobileLineRead' }
+        nextCursor: { type: string, nullable: true }
+
+    PagedUsage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/UsageRecordRead' }
+        nextCursor: { type: string, nullable: true }
+
+    PagedTicketSummaries:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/TicketSummaryRead' }
+        nextCursor: { type: string, nullable: true }
+
+    PagedNotifications:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/NotificationRead' }
+        nextCursor: { type: string, nullable: true }

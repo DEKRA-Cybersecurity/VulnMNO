@@ -1,0 +1,57 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Backend runtime artefacts (SQLite dev DB, uploaded files)
+**/backend/dev.db
+**/backend/dev.db-journal
+**/backend/uploads/
+
+# ---------- Gradle / Android ----------
+# Daemon cache and per-machine state
+.gradle/
+.kotlin/
+captures/
+
+# Gradle build outputs — matches any nested `build/` directory.
+# Source files like build.gradle.kts are NOT ignored (no trailing slash).
+build/
+
+# Per-machine SDK path; sometimes contains usernames
+**/local.properties
+
+# IntelliJ project files
+*.iml
+
+# ---------- IDEs ----------
+.idea/
+.vscode/
+
+# ---------- Obsidian ----------
+.obsidian/
+
+# ---------- OS / editor noise ----------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ---------- Third-party tools cloned into repo ----------
+# `markitdown/` is upstream microsoft/markitdown checked out locally; it has
+# its own .git and should either be a submodule or live outside this tree.
+/markitdown/
+
+# ---------- Local reference originals (not version-controlled) ----------
+# PDFs dropped at repo root (the source documents that were converted into
+# docs/VulnMNO.md and docs/MWP.md). The Markdown copies under docs/ are the
+# canonical, reviewable artefacts; the binaries stay local-only.
+/*.pdf

@@ -1,0 +1,42 @@
+<div class="table-card">
+  <table class="table table-sm mb-0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>MSISDN</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Tier</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for c in rows %}
+      <tr>
+        <td><code>{{ c.public_id }}</code></td>
+        <td>{{ c.name }}</td>
+        <td>{{ c.primary_msisdn }}</td>
+        <td class="text-capitalize">{{ c.account_type }}</td>
+        <td><span class="badge badge-status status-{{ c.status }}">{{ c.status }}</span></td>
+        <td><span class="badge bg-light text-dark text-capitalize">{{ c.loyalty_tier }}</span></td>
+        <td class="text-end">
+          <a class="btn btn-sm btn-outline-primary" href="/admin/customers/{{ c.public_id }}">
+            <i class="bi bi-arrow-right"></i> Open
+          </a>
+        </td>
+      </tr>
+    {% else %}
+      <tr>
+        <td colspan="7" class="text-center text-muted py-4">
+          {% if q %}
+            <i class="bi bi-search me-1"></i>No matches for "{{ q }}".
+          {% else %}
+            <i class="bi bi-info-circle me-1"></i>Type a query above to search.
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>

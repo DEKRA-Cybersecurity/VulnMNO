@@ -1,0 +1,67 @@
+{% extends "admin/base.html" %}
+{% block title %}Refunds · VulnMNO admin{% endblock %}
+{% block topbar_title %}Refunds{% endblock %}
+{% block content %}
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form class="row g-2 align-items-end" method="get" action="/admin/refunds">
+      <div class="col-md-3">
+        <label class="form-label">Status</label>
+        <select class="form-select form-select-sm" name="status_filter">
+          <option value="pending" {% if status_filter == "pending" %}selected{% endif %}>pending</option>
+          <option value="approved" {% if status_filter == "approved" %}selected{% endif %}>approved</option>
+          <option value="rejected" {% if status_filter == "rejected" %}selected{% endif %}>rejected</option>
+          <option value="">— any —</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-sm btn-primary w-100" type="submit">
+          <i class="bi bi-funnel me-1"></i>Filter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="table-card">
+  <table class="table table-sm mb-0">
+    <thead>
+      <tr><th>ID</th><th>Customer</th><th>Target</th><th>Status</th><th>Reason</th>{% if can_act %}<th></th>{% endif %}</tr>
+    </thead>
+    <tbody>
+    {% for r in refunds %}
+      <tr>
+        <td><code>{{ r.public_id }}</code></td>
+        <td><code>CUST-{{ r.customer_id }}</code></td>
+        <td>{{ r.target_type }} <code>{{ r.target_public_id }}</code></td>
+        <td><span class="badge badge-status status-{{ r.status }}">{{ r.status }}</span></td>
+        <td class="text-muted">{{ r.reason[:80] }}</td>
+        {% if can_act %}
+        <td class="text-end">
+          {% if r.status == "pending" %}
+          <form method="post" action="/admin/refunds/{{ r.public_id }}/approve" class="d-inline" onsubmit="return confirm('Approve refund?')">
+            {{ csrf_input(csrf_token) }}
+            <input type="hidden" name="auto_close" value="true">
+            <button class="btn btn-sm btn-success" type="submit">
+              <i class="bi bi-check2"></i> Approve
+            </button>
+          </form>
+          <form method="post" action="/admin/refunds/{{ r.public_id }}/reject" class="d-inline" onsubmit="return confirm('Reject refund?')">
+            {{ csrf_input(csrf_token) }}
+            <input type="hidden" name="reason" value="Insufficient justification.">
+            <button class="btn btn-sm btn-outline-danger" type="submit">
+              <i class="bi bi-x"></i> Reject
+            </button>
+          </form>
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="text-center text-muted py-4">No refunds match.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

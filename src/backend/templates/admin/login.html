@@ -1,0 +1,40 @@
+{% extends "admin/base.html" %}
+{% block title %}Sign in · VulnMNO admin{% endblock %}
+{% block anon_content %}
+<div class="login-card">
+  <div class="login-card__brand">
+    <span class="sidebar__brand-mark">V</span>
+    <div>
+      <h1>VulnMNO</h1>
+      <div class="text-muted" style="font-size: 13px;">Admin portal</div>
+    </div>
+  </div>
+
+  {% if error %}
+  <div class="alert alert-danger">
+    <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ error }}
+  </div>
+  {% endif %}
+
+  <form method="post" action="/admin/login">
+    {{ csrf_input(csrf_token) }}
+    <input type="hidden" name="next" value="{{ next }}">
+    <div class="mb-3">
+      <label class="form-label" for="username">Username</label>
+      <input class="form-control" id="username" name="username" autocomplete="username" required autofocus>
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="password">Password</label>
+      <input class="form-control" type="password" id="password" name="password" autocomplete="current-password" required>
+    </div>
+    <button class="btn btn-primary w-100 py-2" type="submit">
+      <i class="bi bi-box-arrow-in-right me-1"></i>Sign in
+    </button>
+  </form>
+
+  <p class="text-muted small mt-4 mb-0 d-flex align-items-center gap-2">
+    <i class="bi bi-shield-lock"></i>
+    <span>Cookie session · CSRF protected · audit logged.</span>
+  </p>
+</div>
+{% endblock %}

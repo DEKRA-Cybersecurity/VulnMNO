@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VulnMNO</string>
+
+    <!-- Auth -->
+    <string name="auth_sign_in">Iniciar sesión</string>
+    <string name="auth_phone">Número de teléfono</string>
+    <string name="auth_password">Contraseña</string>
+    <string name="auth_forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="auth_otp_title">Introduce el código de 6 dígitos</string>
+
+    <!-- Home -->
+    <string name="home_balance">Saldo</string>
+    <string name="home_current_plan">Plan actual</string>
+    <string name="home_featured_offers">Ofertas destacadas</string>
+    <string name="home_details">Detalles</string>
+    <string name="home_top_up">Recargar</string>
+    <string name="home_manage_plan">Gestionar plan</string>
+
+    <!-- Shop -->
+    <string name="shop_buy">Comprar</string>
+    <string name="shop_promo_code">Código promocional</string>
+    <string name="shop_apply_promo">Aplicar promoción</string>
+    <string name="shop_confirm_purchase">Confirmar compra</string>
+
+    <!-- Loyalty -->
+    <string name="loyalty_section">Fidelidad</string>
+    <string name="loyalty_points">Puntos</string>
+    <string name="loyalty_tier">Nivel</string>
+    <string name="loyalty_next_tier">Puntos para el siguiente nivel</string>
+</resources>

@@ -1,0 +1,65 @@
+{% extends "admin/base.html" %}
+{% block title %}Staff · VulnMNO admin{% endblock %}
+{% block topbar_title %}Admin staff{% endblock %}
+{% block topbar_actions %}
+  <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#new-staff">
+    <i class="bi bi-person-plus me-1"></i>New admin user
+  </button>
+{% endblock %}
+{% block content %}
+
+<div class="collapse mb-3" id="new-staff">
+  <div class="card">
+    <div class="card-body">
+      <h6 class="card-subtitle">Create admin user</h6>
+      <form method="post" action="/admin/staff/new">
+        {{ csrf_input(csrf_token) }}
+        <div class="row g-2">
+          <div class="col-md-2"><input class="form-control form-control-sm" name="username" placeholder="username" required></div>
+          <div class="col-md-3"><input class="form-control form-control-sm" type="password" name="password" placeholder="password (≥8)" required></div>
+          <div class="col-md-3"><input class="form-control form-control-sm" name="full_name" placeholder="Full name" required></div>
+          <div class="col-md-2">
+            <select class="form-select form-select-sm" name="role">
+              <option>support_agent</option><option>billing_operator</option>
+              <option>product_manager</option><option>ops_admin</option>
+              <option>security_analyst</option><option>supplier_admin</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-primary mt-2" type="submit">
+          <i class="bi bi-check2 me-1"></i>Create
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="table-card">
+  <table class="table table-sm mb-0">
+    <thead><tr><th>ID</th><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for u in rows %}
+      <tr>
+        <td><code>{{ u.public_id }}</code></td>
+        <td class="fw-medium">{{ u.username }}</td>
+        <td>{{ u.full_name }}</td>
+        <td><span class="badge bg-light text-dark role-{{ u.role }}">{{ u.role.replace('_', ' ') }}</span></td>
+        <td><span class="badge badge-status status-{{ u.status }}">{{ u.status }}</span></td>
+        <td class="text-end">
+        {% if u.status == "active" %}
+          <form method="post" action="/admin/staff/{{ u.public_id }}/deactivate" class="d-inline" onsubmit="return confirm('Deactivate?')">
+            {{ csrf_input(csrf_token) }}
+            <button class="btn btn-sm btn-outline-danger" type="submit">
+              <i class="bi bi-slash-circle me-1"></i>Deactivate
+            </button>
+          </form>
+        {% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="text-center text-muted py-4">No staff yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

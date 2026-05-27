@@ -1,0 +1,53 @@
+{% extends "admin/base.html" %}
+{% block title %}Audit log · VulnMNO admin{% endblock %}
+{% block topbar_title %}Audit log{% endblock %}
+{% block content %}
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form class="row g-2 align-items-end" method="get" action="/admin/audit">
+      <div class="col-md-3">
+        <label class="form-label">Event type</label>
+        <input class="form-control form-control-sm" name="event_type" value="{{ filters.event_type }}" placeholder="ADMIN_…">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Actor</label>
+        <input class="form-control form-control-sm" name="actor_id" value="{{ filters.actor_id }}" placeholder="ADM- / CUST-">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">From</label>
+        <input class="form-control form-control-sm" name="from_" value="{{ filters['from'] }}" placeholder="ISO timestamp">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">To</label>
+        <input class="form-control form-control-sm" name="to" value="{{ filters.to }}" placeholder="ISO timestamp">
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-sm btn-primary w-100" type="submit">
+          <i class="bi bi-funnel me-1"></i>Filter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="table-card">
+  <table class="table table-sm mb-0">
+    <thead><tr><th>When</th><th>Event</th><th>Actor</th><th>Target</th><th>IP</th><th>Payload</th></tr></thead>
+    <tbody>
+    {% for e in events %}
+      <tr>
+        <td class="text-muted">{{ e.timestamp|dt }}</td>
+        <td><code>{{ e.event_type }}</code></td>
+        <td>{{ e.actor_id or "—" }}</td>
+        <td>{{ e.target_type or "—" }} {{ e.target_id or "" }}</td>
+        <td><small class="text-muted">{{ e.ip_address or "—" }}</small></td>
+        <td><small><code>{{ e.payload | tojson }}</code></small></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="text-center text-muted py-4">No events match.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

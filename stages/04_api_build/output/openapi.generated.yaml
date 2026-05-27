@@ -1,0 +1,2882 @@
+openapi: 3.1.0
+info:
+  title: VulnMNO API
+  version: 0.1.0-phase1
+paths:
+  /api/auth/login:
+    post:
+      tags:
+      - auth
+      summary: Login
+      operationId: login_api_auth_login_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                anyOf:
+                - $ref: '#/components/schemas/TokenPair'
+                - $ref: '#/components/schemas/OtpChallenge'
+                title: Response Login Api Auth Login Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/auth/logout:
+    post:
+      tags:
+      - auth
+      summary: Logout
+      operationId: logout_api_auth_logout_post
+      responses:
+        '204':
+          description: Successful Response
+      security:
+      - HTTPBearer: []
+  /api/auth/refresh:
+    post:
+      tags:
+      - auth
+      summary: Refresh
+      operationId: refresh_api_auth_refresh_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/auth/otp/verify:
+    post:
+      tags:
+      - auth
+      summary: Otp Verify
+      operationId: otp_verify_api_auth_otp_verify_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtpVerifyRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/auth/password-reset/request:
+    post:
+      tags:
+      - auth
+      summary: Password Reset Request
+      operationId: password_reset_request_api_auth_password_reset_request_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+        required: true
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/auth/password-reset/confirm:
+    post:
+      tags:
+      - auth
+      summary: Password Reset Confirm
+      operationId: password_reset_confirm_api_auth_password_reset_confirm_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+        required: true
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/customers/me:
+    get:
+      tags:
+      - customers
+      summary: Get Me
+      operationId: get_me_api_customers_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerRead'
+      security:
+      - HTTPBearer: []
+  /api/customers/me/contact-details:
+    put:
+      tags:
+      - customers
+      summary: Update Contact Details
+      operationId: update_contact_details_api_customers_me_contact_details_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactDetailsUpdate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/customers/me/lines:
+    get:
+      tags:
+      - customers
+      summary: List Lines
+      operationId: list_lines_api_customers_me_lines_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_MobileLineRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/customers/me/sim-profile:
+    get:
+      tags:
+      - customers
+      summary: Get Sim Profile
+      operationId: get_sim_profile_api_customers_me_sim_profile_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimProfileRead'
+      security:
+      - HTTPBearer: []
+  /api/accounts/me/balance:
+    get:
+      tags:
+      - accounts
+      summary: Get Balance
+      operationId: get_balance_api_accounts_me_balance_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceRead'
+      security:
+      - HTTPBearer: []
+  /api/accounts/me/transactions:
+    get:
+      tags:
+      - accounts
+      summary: List Transactions
+      operationId: list_transactions_api_accounts_me_transactions_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_TransactionRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/accounts/me/topup:
+    post:
+      tags:
+      - accounts
+      summary: Topup
+      operationId: topup_api_accounts_me_topup_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopupRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/accounts/me/invoices:
+    get:
+      tags:
+      - accounts
+      summary: List Invoices
+      operationId: list_invoices_api_accounts_me_invoices_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_InvoiceSummaryRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/accounts/me/invoices/{invoiceId}:
+    get:
+      tags:
+      - accounts
+      summary: Get Invoice
+      operationId: get_invoice_api_accounts_me_invoices__invoiceId__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: invoiceId
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Invoiceid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/accounts/me/invoices/{invoiceId}/download:
+    get:
+      tags:
+      - accounts
+      summary: Download Invoice
+      operationId: download_invoice_api_accounts_me_invoices__invoiceId__download_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: invoiceId
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Invoiceid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/accounts/me/refunds:
+    post:
+      tags:
+      - accounts
+      summary: Request Refund
+      operationId: request_refund_api_accounts_me_refunds_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundRequest'
+        required: true
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundCreated'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/shop/products:
+    get:
+      tags:
+      - shop
+      summary: List Products
+      operationId: list_products_api_shop_products_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      - name: category
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+      - name: featured
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Featured
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_ProductRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/shop/products/{productId}:
+    get:
+      tags:
+      - shop
+      summary: Get Product
+      operationId: get_product_api_shop_products__productId__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Productid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/shop/promotions/apply:
+    post:
+      tags:
+      - shop
+      summary: Apply Promo
+      operationId: apply_promo_api_shop_promotions_apply_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyPromoRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromoApplicationRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/shop/purchases:
+    post:
+      tags:
+      - shop
+      summary: Create Purchase
+      operationId: create_purchase_api_shop_purchases_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePurchaseRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - shop
+      summary: List Purchases
+      operationId: list_purchases_api_shop_purchases_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_PurchaseRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/shop/purchases/{purchaseId}:
+    get:
+      tags:
+      - shop
+      summary: Get Purchase
+      operationId: get_purchase_api_shop_purchases__purchaseId__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: purchaseId
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Purchaseid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/shop/purchases/{purchaseId}/cancel:
+    post:
+      tags:
+      - shop
+      summary: Cancel Purchase
+      operationId: cancel_purchase_api_shop_purchases__purchaseId__cancel_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: purchaseId
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Purchaseid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/plans/current:
+    get:
+      tags:
+      - plans
+      summary: Get Current Plan
+      operationId: get_current_plan_api_plans_current_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanRead'
+      security:
+      - HTTPBearer: []
+  /api/plans/available:
+    get:
+      tags:
+      - plans
+      summary: List Available Plans
+      operationId: list_available_plans_api_plans_available_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_PlanRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/plans/change:
+    post:
+      tags:
+      - plans
+      summary: Change Plan
+      operationId: change_plan_api_plans_change_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanChangeRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanChangeRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/plans/change/{changeId}/cancel:
+    post:
+      tags:
+      - plans
+      summary: Cancel Plan Change
+      operationId: cancel_plan_change_api_plans_change__changeId__cancel_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: changeId
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Changeid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanChangeRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/plans/services/add:
+    post:
+      tags:
+      - plans
+      summary: Add Service
+      operationId: add_service_api_plans_services_add_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceToggleRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/plans/services/remove:
+    post:
+      tags:
+      - plans
+      summary: Remove Service
+      operationId: remove_service_api_plans_services_remove_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceToggleRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/usage/calls:
+    get:
+      tags:
+      - usage
+      summary: Usage Calls
+      operationId: usage_calls_api_usage_calls_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: From
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: To
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_UsageRecordRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/usage/sms:
+    get:
+      tags:
+      - usage
+      summary: Usage Sms
+      operationId: usage_sms_api_usage_sms_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: From
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: To
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_UsageRecordRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/usage/data:
+    get:
+      tags:
+      - usage
+      summary: Usage Data
+      operationId: usage_data_api_usage_data_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: From
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: To
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_UsageRecordRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/usage/roaming:
+    get:
+      tags:
+      - usage
+      summary: Usage Roaming
+      operationId: usage_roaming_api_usage_roaming_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: From
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: To
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_UsageRecordRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/usage/export:
+    get:
+      tags:
+      - usage
+      summary: Export Usage
+      operationId: export_usage_api_usage_export_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: format
+        in: query
+        required: true
+        schema:
+          enum:
+          - csv
+          - json
+          type: string
+          title: Format
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: From
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: To
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/support/tickets:
+    post:
+      tags:
+      - support
+      summary: Create Ticket
+      operationId: create_ticket_api_support_tickets_post
+      security:
+      - HTTPBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTicketRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - support
+      summary: List Tickets
+      operationId: list_tickets_api_support_tickets_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_TicketSummaryRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/support/tickets/{ticketId}:
+    get:
+      tags:
+      - support
+      summary: Get Ticket
+      operationId: get_ticket_api_support_tickets__ticketId__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticketid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/support/tickets/{ticketId}/messages:
+    post:
+      tags:
+      - support
+      summary: Add Message
+      operationId: add_message_api_support_tickets__ticketId__messages_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticketid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMessageRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketMessageRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/support/tickets/{ticketId}/attachments:
+    post:
+      tags:
+      - support
+      summary: Add Attachment
+      operationId: add_attachment_api_support_tickets__ticketId__attachments_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticketid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_add_attachment_api_support_tickets__ticketId__attachments_post'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketAttachmentRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/support/tickets/{ticketId}/close:
+    post:
+      tags:
+      - support
+      summary: Close Ticket
+      operationId: close_ticket_api_support_tickets__ticketId__close_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticketid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/notifications:
+    get:
+      tags:
+      - notifications
+      summary: List Notifications
+      operationId: list_notifications_api_notifications_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_NotificationRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/notifications/preferences:
+    post:
+      tags:
+      - notifications
+      summary: Update Preferences
+      operationId: update_preferences_api_notifications_preferences_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationPreferencesUpdate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferences'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/notifications/device-token:
+    post:
+      tags:
+      - notifications
+      summary: Register Device Token
+      operationId: register_device_token_api_notifications_device_token_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceTokenRegister'
+        required: true
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+components:
+  schemas:
+    Address:
+      properties:
+        line1:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Line1
+        line2:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Line2
+        city:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: City
+        postalCode:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Postalcode
+        country:
+          anyOf:
+          - type: string
+            maxLength: 2
+            minLength: 2
+          - type: 'null'
+          title: Country
+      type: object
+      title: Address
+    ApplyPromoRequest:
+      properties:
+        productId:
+          type: string
+          title: Productid
+        promoCode:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Promocode
+      type: object
+      required:
+      - productId
+      - promoCode
+      title: ApplyPromoRequest
+    BalanceRead:
+      properties:
+        accountId:
+          type: string
+          title: Accountid
+        balance:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Balance
+        currency:
+          type: string
+          const: EUR
+          title: Currency
+          default: EUR
+        lastUpdated:
+          type: string
+          format: date-time
+          title: Lastupdated
+      type: object
+      required:
+      - accountId
+      - balance
+      - lastUpdated
+      title: BalanceRead
+    Body_add_attachment_api_support_tickets__ticketId__attachments_post:
+      properties:
+        file:
+          type: string
+          contentMediaType: application/octet-stream
+          title: File
+      type: object
+      required:
+      - file
+      title: Body_add_attachment_api_support_tickets__ticketId__attachments_post
+    ContactDetailsUpdate:
+      properties:
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        billingAddress:
+          anyOf:
+          - $ref: '#/components/schemas/Address'
+          - type: 'null'
+        notificationPreferences:
+          anyOf:
+          - $ref: '#/components/schemas/NotificationPreferencesUpdate'
+          - type: 'null'
+      type: object
+      title: ContactDetailsUpdate
+    CreateMessageRequest:
+      properties:
+        body:
+          type: string
+          maxLength: 4000
+          minLength: 1
+          title: Body
+      type: object
+      required:
+      - body
+      title: CreateMessageRequest
+    CreatePurchaseRequest:
+      properties:
+        productId:
+          type: string
+          title: Productid
+        promoCode:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Promocode
+      type: object
+      required:
+      - productId
+      title: CreatePurchaseRequest
+    CreateTicketRequest:
+      properties:
+        topic:
+          type: string
+          enum:
+          - Billing
+          - Plan
+          - Technical
+          - Purchase
+          - Other
+          title: Topic
+        description:
+          type: string
+          maxLength: 4000
+          minLength: 5
+          title: Description
+      type: object
+      required:
+      - topic
+      - description
+      title: CreateTicketRequest
+    CustomerRead:
+      properties:
+        customerId:
+          type: string
+          title: Customerid
+        name:
+          type: string
+          title: Name
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        primaryMsisdn:
+          type: string
+          title: Primarymsisdn
+        accountType:
+          type: string
+          enum:
+          - prepaid
+          - postpaid
+          - hybrid
+          title: Accounttype
+        status:
+          type: string
+          enum:
+          - active
+          - suspended
+          - closed
+          title: Status
+        loyaltyTier:
+          type: string
+          enum:
+          - bronze
+          - silver
+          - gold
+          - platinum
+          title: Loyaltytier
+        billingAddress:
+          anyOf:
+          - $ref: '#/components/schemas/Address'
+          - type: 'null'
+      type: object
+      required:
+      - customerId
+      - name
+      - primaryMsisdn
+      - accountType
+      - status
+      - loyaltyTier
+      title: CustomerRead
+    DeviceTokenRegister:
+      properties:
+        token:
+          type: string
+          maxLength: 4096
+          minLength: 10
+          title: Token
+        platform:
+          type: string
+          const: android
+          title: Platform
+        appVersion:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Appversion
+      type: object
+      required:
+      - token
+      - platform
+      title: DeviceTokenRegister
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    InvoiceLineItem:
+      properties:
+        description:
+          type: string
+          title: Description
+        amount:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Amount
+        currency:
+          type: string
+          const: EUR
+          title: Currency
+          default: EUR
+        relatedProductId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Relatedproductid
+        relatedPlanId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Relatedplanid
+      type: object
+      required:
+      - description
+      - amount
+      title: InvoiceLineItem
+    InvoiceRead:
+      properties:
+        invoiceId:
+          type: string
+          title: Invoiceid
+        accountId:
+          type: string
+          title: Accountid
+        period:
+          type: string
+          title: Period
+        totalAmount:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Totalamount
+        currency:
+          type: string
+          const: EUR
+          title: Currency
+          default: EUR
+        status:
+          type: string
+          enum:
+          - draft
+          - issued
+          - paid
+          - overdue
+          - void
+          title: Status
+        issuedAt:
+          type: string
+          format: date-time
+          title: Issuedat
+        lineItems:
+          items:
+            $ref: '#/components/schemas/InvoiceLineItem'
+          type: array
+          title: Lineitems
+      type: object
+      required:
+      - invoiceId
+      - accountId
+      - period
+      - totalAmount
+      - status
+      - issuedAt
+      - lineItems
+      title: InvoiceRead
+    InvoiceSummaryRead:
+      properties:
+        invoiceId:
+          type: string
+          title: Invoiceid
+        accountId:
+          type: string
+          title: Accountid
+        period:
+          type: string
+          title: Period
+        totalAmount:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Totalamount
+        currency:
+          type: string
+          const: EUR
+          title: Currency
+          default: EUR
+        status:
+          type: string
+          enum:
+          - draft
+          - issued
+          - paid
+          - overdue
+          - void
+          title: Status
+        issuedAt:
+          type: string
+          format: date-time
+          title: Issuedat
+      type: object
+      required:
+      - invoiceId
+      - accountId
+      - period
+      - totalAmount
+      - status
+      - issuedAt
+      title: InvoiceSummaryRead
+    LoginRequest:
+      properties:
+        msisdn:
+          type: string
+          pattern: ^\+[0-9]{8,15}$
+          title: Msisdn
+        password:
+          type: string
+          maxLength: 128
+          minLength: 8
+          title: Password
+      type: object
+      required:
+      - msisdn
+      - password
+      title: LoginRequest
+    MobileLineRead:
+      properties:
+        lineId:
+          type: string
+          title: Lineid
+        msisdn:
+          type: string
+          title: Msisdn
+        customerId:
+          type: string
+          title: Customerid
+        planId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Planid
+        simId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Simid
+        status:
+          type: string
+          enum:
+          - active
+          - suspended
+          - terminated
+          title: Status
+        activatedAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Activatedat
+      type: object
+      required:
+      - lineId
+      - msisdn
+      - customerId
+      - status
+      title: MobileLineRead
+    NotificationPreferences:
+      properties:
+        push:
+          type: boolean
+          title: Push
+        sms:
+          type: boolean
+          title: Sms
+        email:
+          type: boolean
+          title: Email
+        inApp:
+          type: boolean
+          title: Inapp
+      type: object
+      required:
+      - push
+      - sms
+      - email
+      - inApp
+      title: NotificationPreferences
+    NotificationPreferencesUpdate:
+      properties:
+        push:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Push
+        sms:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Sms
+        email:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Email
+        inApp:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Inapp
+      type: object
+      title: NotificationPreferencesUpdate
+    NotificationRead:
+      properties:
+        notificationId:
+          type: string
+          title: Notificationid
+        customerId:
+          type: string
+          title: Customerid
+        channel:
+          type: string
+          enum:
+          - push
+          - sms
+          - email
+          - in_app
+          title: Channel
+        messageType:
+          type: string
+          enum:
+          - purchase_confirmation
+          - balance_update
+          - plan_change
+          - low_balance
+          - promotion
+          - security
+          - support_update
+          title: Messagetype
+        title:
+          type: string
+          title: Title
+        body:
+          type: string
+          title: Body
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        readAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Readat
+      type: object
+      required:
+      - notificationId
+      - customerId
+      - channel
+      - messageType
+      - title
+      - body
+      - createdAt
+      title: NotificationRead
+    OtpChallenge:
+      properties:
+        challenge:
+          type: string
+          const: OTP
+          title: Challenge
+          default: OTP
+        challengeToken:
+          type: string
+          title: Challengetoken
+        expiresIn:
+          type: integer
+          title: Expiresin
+      type: object
+      required:
+      - challengeToken
+      - expiresIn
+      title: OtpChallenge
+    OtpVerifyRequest:
+      properties:
+        challengeToken:
+          type: string
+          title: Challengetoken
+        code:
+          type: string
+          pattern: ^[0-9]{6}$
+          title: Code
+      type: object
+      required:
+      - challengeToken
+      - code
+      title: OtpVerifyRequest
+    Page_InvoiceSummaryRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/InvoiceSummaryRead'
+          type: array
+          title: Items
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Nextcursor
+      type: object
+      required:
+      - items
+      title: Page[InvoiceSummaryRead]
+    Page_MobileLineRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/MobileLineRead'
+          type: array
+          title: Items
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Nextcursor
+      type: object
+      required:
+      - items
+      title: Page[MobileLineRead]
+    Page_NotificationRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/NotificationRead'
+          type: array
+          title: Items
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Nextcursor
+      type: object
+      required:
+      - items
+      title: Page[NotificationRead]
+    Page_PlanRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/PlanRead'
+          type: array
+          title: Items
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Nextcursor
+      type: object
+      required:
+      - items
+      title: Page[PlanRead]
+    Page_ProductRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ProductRead'
+          type: array
+          title: Items
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Nextcursor
+      type: object
+      required:
+      - items
+      title: Page[ProductRead]
+    Page_PurchaseRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/PurchaseRead'
+          type: array
+          title: Items
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Nextcursor
+      type: object
+      required:
+      - items
+      title: Page[PurchaseRead]
+    Page_TicketSummaryRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/TicketSummaryRead'
+          type: array
+          title: Items
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Nextcursor
+      type: object
+      required:
+      - items
+      title: Page[TicketSummaryRead]
+    Page_TransactionRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/TransactionRead'
+          type: array
+          title: Items
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Nextcursor
+      type: object
+      required:
+      - items
+      title: Page[TransactionRead]
+    Page_UsageRecordRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/UsageRecordRead'
+          type: array
+          title: Items
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Nextcursor
+      type: object
+      required:
+      - items
+      title: Page[UsageRecordRead]
+    PasswordResetConfirm:
+      properties:
+        msisdn:
+          type: string
+          pattern: ^\+[0-9]{8,15}$
+          title: Msisdn
+        code:
+          type: string
+          pattern: ^[0-9]{6}$
+          title: Code
+        newPassword:
+          type: string
+          maxLength: 128
+          minLength: 8
+          title: Newpassword
+      type: object
+      required:
+      - msisdn
+      - code
+      - newPassword
+      title: PasswordResetConfirm
+    PasswordResetRequest:
+      properties:
+        msisdn:
+          type: string
+          pattern: ^\+[0-9]{8,15}$
+          title: Msisdn
+      type: object
+      required:
+      - msisdn
+      title: PasswordResetRequest
+    PlanChangeRead:
+      properties:
+        changeId:
+          type: string
+          title: Changeid
+        customerId:
+          type: string
+          title: Customerid
+        fromPlanId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Fromplanid
+        toPlanId:
+          type: string
+          title: Toplanid
+        status:
+          type: string
+          enum:
+          - applied
+          - pending
+          - cancelled
+          title: Status
+        mode:
+          type: string
+          enum:
+          - immediate
+          - scheduled
+          title: Mode
+        effectiveDate:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Effectivedate
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+      type: object
+      required:
+      - changeId
+      - customerId
+      - toPlanId
+      - status
+      - mode
+      - createdAt
+      title: PlanChangeRead
+    PlanChangeRequest:
+      properties:
+        planId:
+          type: string
+          title: Planid
+        mode:
+          type: string
+          enum:
+          - immediate
+          - scheduled
+          title: Mode
+        effectiveDate:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Effectivedate
+      type: object
+      required:
+      - planId
+      - mode
+      title: PlanChangeRequest
+    PlanRead:
+      properties:
+        planId:
+          type: string
+          title: Planid
+        name:
+          type: string
+          title: Name
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        monthlyPrice:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Monthlyprice
+        currency:
+          type: string
+          const: EUR
+          title: Currency
+          default: EUR
+        dataLimit:
+          type: integer
+          title: Datalimit
+        voiceLimit:
+          type: integer
+          title: Voicelimit
+        smsLimit:
+          type: integer
+          title: Smslimit
+          default: 0
+        category:
+          type: string
+          enum:
+          - prepaid
+          - postpaid
+          - hybrid
+          - business
+          - student
+          - family
+          title: Category
+        activeServices:
+          items:
+            type: string
+          type: array
+          title: Activeservices
+        validFrom:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Validfrom
+      type: object
+      required:
+      - planId
+      - name
+      - monthlyPrice
+      - dataLimit
+      - voiceLimit
+      - category
+      title: PlanRead
+    ProductRead:
+      properties:
+        productId:
+          type: string
+          title: Productid
+        name:
+          type: string
+          title: Name
+        category:
+          type: string
+          enum:
+          - data_bundle
+          - voice_bundle
+          - sms_bundle
+          - roaming
+          - addon
+          - accessory
+          - loyalty
+          - promo
+          title: Category
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        price:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Price
+        currency:
+          type: string
+          const: EUR
+          title: Currency
+          default: EUR
+        validityDays:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Validitydays
+        eligiblePlans:
+          items:
+            type: string
+          type: array
+          title: Eligibleplans
+        featured:
+          type: boolean
+          title: Featured
+          default: false
+        availability:
+          type: string
+          enum:
+          - available
+          - sold_out
+          - hidden
+          title: Availability
+          default: available
+      type: object
+      required:
+      - productId
+      - name
+      - category
+      - price
+      title: ProductRead
+    PromoApplicationRead:
+      properties:
+        promotionId:
+          type: string
+          title: Promotionid
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        originalPrice:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Originalprice
+        discountAmount:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Discountamount
+        finalPrice:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Finalprice
+        currency:
+          type: string
+          const: EUR
+          title: Currency
+          default: EUR
+      type: object
+      required:
+      - promotionId
+      - originalPrice
+      - discountAmount
+      - finalPrice
+      title: PromoApplicationRead
+    ProvisioningStatus:
+      properties:
+        status:
+          type: string
+          enum:
+          - pending
+          - active
+          - failed
+          title: Status
+        activatedAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Activatedat
+      type: object
+      required:
+      - status
+      title: ProvisioningStatus
+    PurchaseRead:
+      properties:
+        purchaseId:
+          type: string
+          title: Purchaseid
+        customerId:
+          type: string
+          title: Customerid
+        productId:
+          type: string
+          title: Productid
+        promotionId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Promotionid
+        status:
+          type: string
+          enum:
+          - confirmed
+          - cancelled
+          - failed
+          title: Status
+        originalPrice:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Originalprice
+        finalPrice:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Finalprice
+        currency:
+          type: string
+          const: EUR
+          title: Currency
+          default: EUR
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        provisioning:
+          $ref: '#/components/schemas/ProvisioningStatus'
+      type: object
+      required:
+      - purchaseId
+      - customerId
+      - productId
+      - status
+      - originalPrice
+      - finalPrice
+      - createdAt
+      - provisioning
+      title: PurchaseRead
+    RefreshRequest:
+      properties:
+        refreshToken:
+          type: string
+          title: Refreshtoken
+      type: object
+      required:
+      - refreshToken
+      title: RefreshRequest
+    RefundCreated:
+      properties:
+        refundId:
+          type: string
+          title: Refundid
+        status:
+          type: string
+          const: pending
+          title: Status
+          default: pending
+        ticketId:
+          type: string
+          title: Ticketid
+      type: object
+      required:
+      - refundId
+      - ticketId
+      title: RefundCreated
+    RefundRequest:
+      properties:
+        targetType:
+          type: string
+          enum:
+          - purchase
+          - invoice
+          title: Targettype
+        targetId:
+          type: string
+          title: Targetid
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 5
+          title: Reason
+      type: object
+      required:
+      - targetType
+      - targetId
+      - reason
+      title: RefundRequest
+    ServiceToggleRequest:
+      properties:
+        serviceId:
+          type: string
+          title: Serviceid
+      type: object
+      required:
+      - serviceId
+      title: ServiceToggleRequest
+    SimProfileRead:
+      properties:
+        simId:
+          type: string
+          title: Simid
+        iccid:
+          type: string
+          title: Iccid
+        imsiAlias:
+          type: string
+          title: Imsialias
+        type:
+          type: string
+          enum:
+          - physical
+          - esim
+          title: Type
+        status:
+          type: string
+          enum:
+          - active
+          - suspended
+          - swapped
+          title: Status
+        activationDate:
+          type: string
+          format: date
+          title: Activationdate
+      type: object
+      required:
+      - simId
+      - iccid
+      - imsiAlias
+      - type
+      - status
+      - activationDate
+      title: SimProfileRead
+    TicketAttachmentRead:
+      properties:
+        attachmentId:
+          type: string
+          title: Attachmentid
+        ticketId:
+          type: string
+          title: Ticketid
+        filename:
+          type: string
+          title: Filename
+        sizeBytes:
+          type: integer
+          maximum: 10485760.0
+          title: Sizebytes
+        contentType:
+          type: string
+          title: Contenttype
+        uploadedAt:
+          type: string
+          format: date-time
+          title: Uploadedat
+      type: object
+      required:
+      - attachmentId
+      - ticketId
+      - filename
+      - sizeBytes
+      - contentType
+      - uploadedAt
+      title: TicketAttachmentRead
+    TicketAuthor:
+      properties:
+        role:
+          type: string
+          enum:
+          - customer
+          - agent
+          - system
+          title: Role
+        displayName:
+          type: string
+          title: Displayname
+      type: object
+      required:
+      - role
+      - displayName
+      title: TicketAuthor
+    TicketMessageRead:
+      properties:
+        messageId:
+          type: string
+          title: Messageid
+        ticketId:
+          type: string
+          title: Ticketid
+        author:
+          $ref: '#/components/schemas/TicketAuthor'
+        body:
+          type: string
+          title: Body
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+      type: object
+      required:
+      - messageId
+      - ticketId
+      - author
+      - body
+      - createdAt
+      title: TicketMessageRead
+    TicketRead:
+      properties:
+        ticketId:
+          type: string
+          title: Ticketid
+        customerId:
+          type: string
+          title: Customerid
+        topic:
+          type: string
+          enum:
+          - Billing
+          - Plan
+          - Technical
+          - Purchase
+          - Other
+          title: Topic
+        status:
+          type: string
+          enum:
+          - open
+          - pending
+          - closed
+          title: Status
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        lastUpdatedAt:
+          type: string
+          format: date-time
+          title: Lastupdatedat
+        description:
+          type: string
+          title: Description
+        messages:
+          items:
+            $ref: '#/components/schemas/TicketMessageRead'
+          type: array
+          title: Messages
+        attachments:
+          items:
+            $ref: '#/components/schemas/TicketAttachmentRead'
+          type: array
+          title: Attachments
+          default: []
+      type: object
+      required:
+      - ticketId
+      - customerId
+      - topic
+      - status
+      - createdAt
+      - lastUpdatedAt
+      - description
+      - messages
+      title: TicketRead
+    TicketSummaryRead:
+      properties:
+        ticketId:
+          type: string
+          title: Ticketid
+        customerId:
+          type: string
+          title: Customerid
+        topic:
+          type: string
+          enum:
+          - Billing
+          - Plan
+          - Technical
+          - Purchase
+          - Other
+          title: Topic
+        status:
+          type: string
+          enum:
+          - open
+          - pending
+          - closed
+          title: Status
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        lastUpdatedAt:
+          type: string
+          format: date-time
+          title: Lastupdatedat
+      type: object
+      required:
+      - ticketId
+      - customerId
+      - topic
+      - status
+      - createdAt
+      - lastUpdatedAt
+      title: TicketSummaryRead
+    TokenPair:
+      properties:
+        accessToken:
+          type: string
+          title: Accesstoken
+        refreshToken:
+          type: string
+          title: Refreshtoken
+        expiresIn:
+          type: integer
+          title: Expiresin
+        tokenType:
+          type: string
+          const: Bearer
+          title: Tokentype
+          default: Bearer
+      type: object
+      required:
+      - accessToken
+      - refreshToken
+      - expiresIn
+      title: TokenPair
+    TopupRequest:
+      properties:
+        amount:
+          anyOf:
+          - type: number
+            maximum: 500.0
+            minimum: 1.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Amount
+        currency:
+          type: string
+          const: EUR
+          title: Currency
+          default: EUR
+      type: object
+      required:
+      - amount
+      title: TopupRequest
+    TransactionRead:
+      properties:
+        transactionId:
+          type: string
+          title: Transactionid
+        accountId:
+          type: string
+          title: Accountid
+        type:
+          type: string
+          enum:
+          - topup
+          - purchase
+          - refund
+          - adjustment
+          - charge
+          title: Type
+        amount:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Amount
+        currency:
+          type: string
+          const: EUR
+          title: Currency
+          default: EUR
+        balanceAfter:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Balanceafter
+        relatedPurchaseId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Relatedpurchaseid
+        relatedInvoiceId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Relatedinvoiceid
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+      type: object
+      required:
+      - transactionId
+      - accountId
+      - type
+      - amount
+      - balanceAfter
+      - timestamp
+      title: TransactionRead
+    UsageRecordRead:
+      properties:
+        usageId:
+          type: string
+          title: Usageid
+        lineId:
+          type: string
+          title: Lineid
+        type:
+          type: string
+          enum:
+          - call
+          - sms
+          - data
+          - roaming
+          title: Type
+        direction:
+          anyOf:
+          - type: string
+            enum:
+            - incoming
+            - outgoing
+          - type: 'null'
+          title: Direction
+        destination:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Destination
+        startedAt:
+          type: string
+          format: date-time
+          title: Startedat
+        durationSeconds:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Durationseconds
+        volumeMegabytes:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Volumemegabytes
+        country:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Country
+        networkType:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Networktype
+        roaming:
+          type: boolean
+          title: Roaming
+          default: false
+        cost:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Cost
+        currency:
+          type: string
+          const: EUR
+          title: Currency
+          default: EUR
+      type: object
+      required:
+      - usageId
+      - lineId
+      - type
+      - startedAt
+      - cost
+      title: UsageRecordRead
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      scheme: bearer

@@ -1,0 +1,60 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard · VulnMNO admin{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="kpi-grid">
+  <div class="kpi kpi--indigo">
+    <span class="kpi__label">Customers</span>
+    <span class="kpi__value">{{ kpi.customers }}</span>
+    <span class="kpi__icon"><i class="bi bi-people-fill"></i></span>
+  </div>
+  <div class="kpi kpi--green">
+    <span class="kpi__label">Confirmed purchases</span>
+    <span class="kpi__value">{{ kpi.purchases_confirmed }}</span>
+    <span class="kpi__icon"><i class="bi bi-bag-check-fill"></i></span>
+  </div>
+  <div class="kpi kpi--amber">
+    <span class="kpi__label">Open tickets</span>
+    <span class="kpi__value">{{ kpi.open_tickets }}</span>
+    <span class="kpi__icon"><i class="bi bi-chat-square-text-fill"></i></span>
+  </div>
+  <div class="kpi kpi--rose">
+    <span class="kpi__label">Pending refunds</span>
+    <span class="kpi__value">{{ kpi.pending_refunds }}</span>
+    <span class="kpi__icon"><i class="bi bi-arrow-counterclockwise"></i></span>
+  </div>
+</div>
+
+<div class="section-title">
+  <h2>Recent admin activity</h2>
+  <a href="/admin/audit" class="btn btn-sm btn-primary">
+    <i class="bi bi-clipboard2-data me-1"></i>View audit log
+  </a>
+</div>
+
+<div class="table-card">
+  <table class="table table-sm mb-0">
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Actor</th>
+        <th>Event</th>
+        <th>Target</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for ev in recent_audit %}
+      <tr>
+        <td class="text-muted">{{ ev.timestamp|dt }}</td>
+        <td>{{ ev.actor_id or "—" }}</td>
+        <td><code>{{ ev.event_type }}</code></td>
+        <td>{{ ev.target_type or "—" }} {{ ev.target_id or "" }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="4" class="text-center text-muted py-4">No events yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

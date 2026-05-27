@@ -1,0 +1,73 @@
+{% extends "admin/base.html" %}
+{% block title %}Plans · VulnMNO admin{% endblock %}
+{% block topbar_title %}Plans{% endblock %}
+{% block topbar_actions %}
+  {% if can_edit %}
+  <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#new-plan">
+    <i class="bi bi-plus-lg me-1"></i>New plan
+  </button>
+  {% endif %}
+{% endblock %}
+{% block content %}
+
+{% if can_edit %}
+<div class="collapse mb-3" id="new-plan">
+  <div class="card">
+    <div class="card-body">
+      <h6 class="card-subtitle">Create plan</h6>
+      <form method="post" action="/admin/plans/new">
+        {{ csrf_input(csrf_token) }}
+        <div class="row g-2">
+          <div class="col-md-3"><input class="form-control form-control-sm" name="public_id" placeholder="PLAN-ID" required></div>
+          <div class="col-md-3"><input class="form-control form-control-sm" name="name" placeholder="Display name" required></div>
+          <div class="col-md-2"><input class="form-control form-control-sm" name="monthly_price" placeholder="€/mo" required></div>
+          <div class="col-md-1"><input class="form-control form-control-sm" name="data_limit_mb" placeholder="MB" value="0"></div>
+          <div class="col-md-1"><input class="form-control form-control-sm" name="voice_limit_min" placeholder="min" value="0"></div>
+          <div class="col-md-2">
+            <select class="form-select form-select-sm" name="category">
+              <option>prepaid</option><option>postpaid</option><option>hybrid</option><option>business</option><option>student</option><option>family</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-primary mt-2" type="submit">
+          <i class="bi bi-check2 me-1"></i>Create
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="table-card">
+  <table class="table table-sm mb-0">
+    <thead>
+      <tr><th>ID</th><th>Name</th><th>Monthly</th><th>Data</th><th>Voice</th><th>SMS</th><th>Category</th>{% if can_edit %}<th></th>{% endif %}</tr>
+    </thead>
+    <tbody>
+    {% for p in plans %}
+      <tr>
+        <td><code>{{ p.public_id }}</code></td>
+        <td class="fw-medium">{{ p.name }}</td>
+        <td class="fw-semibold">{{ p.monthly_price|money(p.currency) }}</td>
+        <td>{{ p.data_limit_mb }} <small class="text-muted">MB</small></td>
+        <td>{{ p.voice_limit_min }} <small class="text-muted">min</small></td>
+        <td>{{ p.sms_limit }}</td>
+        <td><span class="badge bg-light text-dark text-capitalize">{{ p.category }}</span></td>
+        {% if can_edit %}
+        <td class="text-end">
+          <form method="post" action="/admin/plans/{{ p.public_id }}/archive" class="d-inline" onsubmit="return confirm('Archive plan?')">
+            {{ csrf_input(csrf_token) }}
+            <button class="btn btn-sm btn-outline-danger" type="submit">
+              <i class="bi bi-archive me-1"></i>Archive
+            </button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+    {% else %}
+      <tr><td colspan="{% if can_edit %}8{% else %}7{% endif %}" class="text-center text-muted py-4">No plans yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

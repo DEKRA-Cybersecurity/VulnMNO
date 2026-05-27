@@ -1,0 +1,36 @@
+[project]
+name = "vulnmno-backend"
+version = "0.2.0"
+description = "VulnMNO backend (FastAPI) — Phase 1 customer API + Phase 2 admin portal."
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+  "sqlalchemy>=2.0",
+  "alembic>=1.13",
+  "aiosqlite>=0.19",
+  "asyncpg>=0.29",            # Phase 2 prod-like (PostgreSQL via docker-compose)
+  "pydantic>=2.6",
+  "pydantic-settings>=2.2",
+  "PyJWT>=2.8",
+  "argon2-cffi>=23",
+  "python-multipart>=0.0.9",
+  # Phase 2 — admin portal + integrations + ops
+  "jinja2>=3.1",
+  "itsdangerous>=2.2",
+  "httpx>=0.27",              # gateway adapters (Stripe sandbox, HTTP provisioning)
+  "slowapi>=0.1.9",           # rate limiting
+  "PyYAML>=6.0",              # i18n message catalogs
+  # "firebase-admin>=6.5",    # FCM real driver — optional install, only when VULNMNO_PUSH_DRIVER=fcm
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "httpx>=0.27", "ruff>=0.4", "mypy>=1.10"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

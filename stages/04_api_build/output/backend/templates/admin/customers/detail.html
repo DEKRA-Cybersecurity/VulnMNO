@@ -1,0 +1,143 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ customer.name }} · VulnMNO admin{% endblock %}
+{% block topbar_title %}{{ customer.name }}{% endblock %}
+{% block content %}
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/admin/customers"><i class="bi bi-people me-1"></i>Customers</a></li>
+    <li class="breadcrumb-item active">{{ customer.public_id }}</li>
+  </ol>
+</nav>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="card-subtitle">Customer</h6>
+        <p class="mb-2"><code>{{ customer.public_id }}</code></p>
+        <p class="mb-1"><i class="bi bi-telephone me-1 text-muted"></i>{{ customer.primary_msisdn }}</p>
+        <p class="mb-2"><i class="bi bi-envelope me-1 text-muted"></i>{{ customer.email or "—" }}</p>
+        <hr class="my-2">
+        <div class="d-flex flex-wrap gap-2">
+          <span class="badge bg-light text-dark text-capitalize">{{ customer.account_type }}</span>
+          <span class="badge bg-light text-dark text-capitalize">{{ customer.loyalty_tier }}</span>
+          <span class="badge badge-status status-{{ customer.status }}">{{ customer.status }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4" id="balance-card">
+    {% include "admin/_partials/balance_card.html" %}
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="card-subtitle">Current plan</h6>
+        <p class="mb-1 fs-5 fw-semibold">{{ current_plan.name if current_plan else "—" }}</p>
+        {% if current_plan %}
+          <p class="text-muted small mb-0">
+            <i class="bi bi-cash-coin me-1"></i>{{ current_plan.monthly_price|money }} / month
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><a class="nav-link active" href="#tx"><i class="bi bi-list-ul me-1"></i>Transactions</a></li>
+  <li class="nav-item"><a class="nav-link" href="#pur"><i class="bi bi-bag me-1"></i>Purchases</a></li>
+  <li class="nav-item"><a class="nav-link" href="#tickets"><i class="bi bi-chat-square-text me-1"></i>Open tickets</a></li>
+  <li class="nav-item"><a class="nav-link" href="#lines"><i class="bi bi-sim me-1"></i>Lines</a></li>
+</ul>
+
+<section id="tx">
+  <div class="section-title"><h2>Recent transactions</h2></div>
+  <div class="table-card">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>ID</th><th>Type</th><th>Amount</th><th>Balance after</th><th>When</th></tr></thead>
+      <tbody>
+      {% for t in recent_tx %}
+        <tr>
+          <td><code>{{ t.public_id }}</code></td>
+          <td class="text-capitalize">{{ t.type }}</td>
+          <td>{{ t.amount|money(t.currency) }}</td>
+          <td class="fw-semibold">{{ t.balance_after|money(t.currency) }}</td>
+          <td class="text-muted">{{ t.timestamp|dt }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No transactions yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="pur" class="mt-4">
+  <div class="section-title"><h2>Recent purchases</h2></div>
+  <div class="table-card">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>ID</th><th>Product</th><th>Status</th><th>Final</th><th>When</th></tr></thead>
+      <tbody>
+      {% for p in recent_pur %}
+        <tr>
+          <td><code>{{ p.public_id }}</code></td>
+          <td>{{ p.product_id }}</td>
+          <td>
+            <span class="badge badge-status status-{{ p.status }}">{{ p.status }}</span>
+            <small class="text-muted">{{ p.provisioning_status }}</small>
+          </td>
+          <td class="fw-semibold">{{ p.final_price|money(p.currency) }}</td>
+          <td class="text-muted">{{ p.created_at|dt }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No purchases yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="tickets" class="mt-4">
+  <div class="section-title"><h2>Open tickets</h2></div>
+  <div class="table-card">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>ID</th><th>Topic</th><th>Status</th><th>Created</th></tr></thead>
+      <tbody>
+      {% for t in open_tickets %}
+        <tr>
+          <td><a href="/admin/tickets/{{ t.public_id }}"><code>{{ t.public_id }}</code></a></td>
+          <td>{{ t.topic }}</td>
+          <td><span class="badge badge-status status-{{ t.status }}">{{ t.status }}</span></td>
+          <td class="text-muted">{{ t.created_at|dt }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="text-center text-muted py-4">No open tickets.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="lines" class="mt-4">
+  <div class="section-title"><h2>Lines</h2></div>
+  <div class="table-card">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>ID</th><th>MSISDN</th><th>Status</th><th>Activated</th></tr></thead>
+      <tbody>
+      {% for l in lines %}
+        <tr>
+          <td><code>{{ l.public_id }}</code></td>
+          <td>{{ l.msisdn }}</td>
+          <td><span class="badge badge-status status-{{ l.status }}">{{ l.status }}</span></td>
+          <td class="text-muted">{{ l.activated_at or "—" }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="text-center text-muted py-4">No lines.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

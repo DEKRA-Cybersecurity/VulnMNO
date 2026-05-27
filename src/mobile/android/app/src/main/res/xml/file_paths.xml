@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Backs FileProvider authority ${applicationId}.fileprovider. Used by
+         InvoiceDetailScreen to share the downloaded PDF with the system viewer. -->
+    <cache-path name="invoice-cache" path="." />
+</paths>

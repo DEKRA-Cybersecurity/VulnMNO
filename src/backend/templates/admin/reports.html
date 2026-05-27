@@ -1,0 +1,38 @@
+{% extends "admin/base.html" %}
+{% block title %}Reports · VulnMNO admin{% endblock %}
+{% block topbar_title %}Reports{% endblock %}
+{% block content %}
+
+<div class="kpi-grid">
+  <div class="kpi kpi--indigo">
+    <span class="kpi__label">Customers</span>
+    <span class="kpi__value">{{ kpi.customers }}</span>
+    <span class="kpi__icon"><i class="bi bi-people-fill"></i></span>
+  </div>
+  <div class="kpi kpi--green">
+    <span class="kpi__label">Purchases (7d)</span>
+    <span class="kpi__value">{{ kpi.purchases_confirmed_7d }}</span>
+    <span class="kpi__icon"><i class="bi bi-bag-check-fill"></i></span>
+  </div>
+  <div class="kpi kpi--sky">
+    <span class="kpi__label">Refund approval rate</span>
+    <span class="kpi__value">{{ kpi.refund_approval_rate_pct }}%</span>
+    <span class="kpi__icon"><i class="bi bi-graph-up-arrow"></i></span>
+  </div>
+  <div class="kpi kpi--amber">
+    <span class="kpi__label">Open tickets</span>
+    <span class="kpi__value">{{ kpi.tickets_open }}</span>
+    <span class="kpi__icon"><i class="bi bi-chat-square-text-fill"></i></span>
+  </div>
+  <div class="kpi kpi--rose">
+    <span class="kpi__label">Rate-limit hits (24h)</span>
+    <span class="kpi__value">{{ kpi.rate_limit_hits_24h }}</span>
+    <span class="kpi__icon"><i class="bi bi-shield-exclamation"></i></span>
+  </div>
+</div>
+
+<div class="alert alert-secondary mt-4 d-flex align-items-center gap-2">
+  <i class="bi bi-info-circle"></i>
+  <span>All metrics are computed live from the operational database. Wire to a metrics pipeline in Phase 3.</span>
+</div>
+{% endblock %}

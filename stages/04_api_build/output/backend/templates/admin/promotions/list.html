@@ -1,0 +1,80 @@
+{% extends "admin/base.html" %}
+{% block title %}Promotions · VulnMNO admin{% endblock %}
+{% block topbar_title %}Promotions{% endblock %}
+{% block topbar_actions %}
+  {% if can_edit %}
+  <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#new-promo">
+    <i class="bi bi-plus-lg me-1"></i>New promotion
+  </button>
+  {% endif %}
+{% endblock %}
+{% block content %}
+
+{% if can_edit %}
+<div class="collapse mb-3" id="new-promo">
+  <div class="card">
+    <div class="card-body">
+      <h6 class="card-subtitle">Create promotion</h6>
+      <form method="post" action="/admin/promotions/new">
+        {{ csrf_input(csrf_token) }}
+        <div class="row g-2">
+          <div class="col-md-3"><input class="form-control form-control-sm" name="public_id" placeholder="PROMO-…" required></div>
+          <div class="col-md-3"><input class="form-control form-control-sm" name="name" placeholder="Display name" required></div>
+          <div class="col-md-2">
+            <select class="form-select form-select-sm" name="discount_type">
+              <option value="percent">percent</option>
+              <option value="fixed">fixed</option>
+            </select>
+          </div>
+          <div class="col-md-2"><input class="form-control form-control-sm" name="discount_value" placeholder="value" required></div>
+          <div class="col-md-1"><input class="form-control form-control-sm" type="datetime-local" name="starts_at" required></div>
+          <div class="col-md-1"><input class="form-control form-control-sm" type="datetime-local" name="ends_at" required></div>
+        </div>
+        <button class="btn btn-sm btn-primary mt-2" type="submit">
+          <i class="bi bi-check2 me-1"></i>Create
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="table-card">
+  <table class="table table-sm mb-0">
+    <thead>
+      <tr><th>ID</th><th>Name</th><th>Type</th><th>Value</th><th>Window</th><th>Combinable</th>{% if can_edit %}<th>Coupons</th>{% endif %}</tr>
+    </thead>
+    <tbody>
+    {% for p in promos %}
+      <tr>
+        <td><code>{{ p.public_id }}</code></td>
+        <td class="fw-medium">{{ p.name }}</td>
+        <td><span class="badge bg-light text-dark text-capitalize">{{ p.discount_type }}</span></td>
+        <td class="fw-semibold">{{ p.discount_value }}</td>
+        <td class="text-muted small">{{ p.starts_at|dt }} → {{ p.ends_at|dt }}</td>
+        <td>
+          {% if p.combinable %}
+            <i class="bi bi-check-circle-fill text-success"></i>
+          {% else %}
+            <i class="bi bi-dash-circle text-muted"></i>
+          {% endif %}
+        </td>
+        {% if can_edit %}
+        <td>
+          <form method="post" action="/admin/promotions/{{ p.public_id }}/coupons/generate" class="d-inline-flex align-items-center gap-2">
+            {{ csrf_input(csrf_token) }}
+            <input type="number" name="count" min="1" max="1000" value="10" class="form-control form-control-sm" style="width:5em">
+            <button class="btn btn-sm btn-outline-success" type="submit">
+              <i class="bi bi-ticket-perforated me-1"></i>Generate
+            </button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+    {% else %}
+      <tr><td colspan="{% if can_edit %}7{% else %}6{% endif %}" class="text-center text-muted py-4">No promotions yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

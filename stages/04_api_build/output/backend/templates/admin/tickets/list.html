@@ -1,0 +1,56 @@
+{% extends "admin/base.html" %}
+{% block title %}Tickets · VulnMNO admin{% endblock %}
+{% block topbar_title %}Support tickets{% endblock %}
+{% block content %}
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form class="row g-2 align-items-end" method="get" action="/admin/tickets">
+      <div class="col-md-4">
+        <label class="form-label">Status</label>
+        <select class="form-select form-select-sm" name="status_filter">
+          <option value="">— any status —</option>
+          <option value="open" {% if status_filter == "open" %}selected{% endif %}>open</option>
+          <option value="pending" {% if status_filter == "pending" %}selected{% endif %}>pending</option>
+          <option value="closed" {% if status_filter == "closed" %}selected{% endif %}>closed</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Topic</label>
+        <select class="form-select form-select-sm" name="topic">
+          <option value="">— any topic —</option>
+          <option value="Billing" {% if topic_filter == "Billing" %}selected{% endif %}>Billing</option>
+          <option value="Plan" {% if topic_filter == "Plan" %}selected{% endif %}>Plan</option>
+          <option value="Technical" {% if topic_filter == "Technical" %}selected{% endif %}>Technical</option>
+          <option value="Purchase" {% if topic_filter == "Purchase" %}selected{% endif %}>Purchase</option>
+          <option value="Other" {% if topic_filter == "Other" %}selected{% endif %}>Other</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-sm btn-primary w-100" type="submit">
+          <i class="bi bi-funnel me-1"></i>Filter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="table-card">
+  <table class="table table-sm mb-0">
+    <thead><tr><th>ID</th><th>Customer</th><th>Topic</th><th>Status</th><th>Updated</th></tr></thead>
+    <tbody>
+    {% for t in tickets %}
+      <tr>
+        <td><a href="/admin/tickets/{{ t.public_id }}"><code>{{ t.public_id }}</code></a></td>
+        <td><code>CUST-{{ t.customer_id }}</code></td>
+        <td>{{ t.topic }}</td>
+        <td><span class="badge badge-status status-{{ t.status }}">{{ t.status }}</span></td>
+        <td class="text-muted">{{ t.last_updated_at|dt }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="text-center text-muted py-4">No tickets match.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

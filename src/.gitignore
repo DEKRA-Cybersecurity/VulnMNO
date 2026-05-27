@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.venv/
+.env
+
+# Backend runtime artefacts
+backend/dev.db
+backend/dev.db-journal
+backend/uploads/
+
+# Android / Gradle
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/.idea/
+mobile/android/local.properties
+mobile/android/.kotlin/
+mobile/android/captures/
+**/*.iml
+
+# OS / editor
+.DS_Store
+*.swp
+.vscode/

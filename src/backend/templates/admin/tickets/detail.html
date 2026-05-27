@@ -1,0 +1,72 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ ticket.public_id }} · VulnMNO admin{% endblock %}
+{% block topbar_title %}{{ ticket.topic }}{% endblock %}
+{% block content %}
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/admin/tickets"><i class="bi bi-chat-square-text me-1"></i>Tickets</a></li>
+    <li class="breadcrumb-item active">{{ ticket.public_id }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <span class="text-muted small">{{ ticket.public_id }}</span>
+    <p class="text-muted small mb-0">
+      <i class="bi bi-person me-1"></i>Opened by <code>{{ customer.public_id }}</code>
+      <span class="mx-2">·</span>
+      <i class="bi bi-clock me-1"></i>{{ ticket.created_at|dt }}
+    </p>
+  </div>
+  <span class="badge badge-status status-{{ ticket.status }}">{{ ticket.status }}</span>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="card-subtitle">Original description</h6>
+    <p class="mb-0">{{ ticket.description }}</p>
+  </div>
+</div>
+
+<div class="section-title"><h2>Conversation</h2></div>
+{% for m in ticket.messages %}
+<div class="card mb-2"><div class="card-body py-3">
+  <div class="d-flex align-items-center gap-2 mb-2">
+    <strong>{{ m.author_display_name }}</strong>
+    <span class="badge {% if m.author_role == 'agent' %}status-info{% elif m.author_role == 'system' %}status-skipped{% else %}status-open{% endif %}">{{ m.author_role }}</span>
+    <span class="text-muted small ms-auto">{{ m.created_at|dt }}</span>
+  </div>
+  <div>{{ m.body }}</div>
+</div></div>
+{% endfor %}
+
+{% if can_write %}
+  {% if ticket.status != "closed" %}
+  <div class="card mt-3">
+    <div class="card-body">
+      <form method="post" action="/admin/tickets/{{ ticket.public_id }}/agent-reply">
+        {{ csrf_input(csrf_token) }}
+        <label class="form-label"><i class="bi bi-reply me-1"></i>Reply as agent</label>
+        <textarea class="form-control" name="body" rows="3" placeholder="Type your reply…" required></textarea>
+        <div class="mt-2 d-flex gap-2">
+          <button class="btn btn-primary" type="submit">
+            <i class="bi bi-send me-1"></i>Send reply
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <form method="post" action="/admin/tickets/{{ ticket.public_id }}/close" class="mt-2" onsubmit="return confirm('Close ticket?')">
+    {{ csrf_input(csrf_token) }}
+    <button class="btn btn-outline-danger btn-sm" type="submit">
+      <i class="bi bi-x-circle me-1"></i>Close ticket
+    </button>
+  </form>
+  {% else %}
+  <div class="alert alert-secondary mt-3">
+    <i class="bi bi-info-circle me-1"></i>Ticket closed — re-open from customer support workflow if needed.
+  </div>
+  {% endif %}
+{% endif %}
+{% endblock %}
