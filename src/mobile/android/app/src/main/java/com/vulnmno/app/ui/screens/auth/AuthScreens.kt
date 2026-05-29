@@ -132,31 +132,15 @@ fun LoginScreen(nav: NavHostController, vm: LoginViewModel = hiltViewModel()) {
         Spacer(Modifier.height(8.dp))
 
         when {
-            // Override is active — show what we're hitting + how to clear it.
-            override != null -> {
-                Text(
-                    "Backend: $override",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontFamily = FontFamily.Monospace,
-                )
-                Spacer(Modifier.height(4.dp))
-                Row {
-                    TextButton(onClick = { showPhysical = true }) { Text("Change") }
-                    TextButton(onClick = { vm.clearBaseUrlOverride(); showPhysical = false; ipInput = "" }) {
-                        Text("Use default")
-                    }
-                }
-            }
-            // Toggle hidden — show the affordance.
-            !showPhysical -> {
-                TextButton(onClick = { showPhysical = true }) { Text("Physical device?") }
-            }
-            // Toggle expanded — collect the IP.
-            else -> {
+            // Toggle expanded — collect the IP. Wins over the "override active"
+            // branch so the user can edit a previously-set override (Change
+            // button below puts us here with `ipInput` pre-filled by the
+            // LaunchedEffect above).
+            showPhysical -> {
                 OutlinedTextField(
                     value = ipInput, onValueChange = { ipInput = it },
                     label = { Text("Backend host") },
-                    placeholder = { Text("e.g. 192.168.1.42:8000") },
+                    placeholder = { Text("192.168.1.42  (https/443 via Caddy)") },
                     singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Uri),
                     modifier = Modifier.fillMaxWidth(),
@@ -169,10 +153,34 @@ fun LoginScreen(nav: NavHostController, vm: LoginViewModel = hiltViewModel()) {
                         modifier = Modifier.weight(1f),
                     ) { Text("Use this backend") }
                     OutlinedButton(
-                        onClick = { showPhysical = false; ipInput = "" },
+                        onClick = {
+                            showPhysical = false
+                            // Restore the field to the active override (if any)
+                            // so a future Change starts from the right value.
+                            ipInput = override.orEmpty()
+                        },
                         modifier = Modifier.weight(1f),
                     ) { Text("Cancel") }
                 }
+            }
+            // Override is active — show what we're hitting + how to edit / clear it.
+            override != null -> {
+                Text(
+                    "Backend: $override",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontFamily = FontFamily.Monospace,
+                )
+                Spacer(Modifier.height(4.dp))
+                Row {
+                    TextButton(onClick = { ipInput = override.orEmpty(); showPhysical = true }) { Text("Change") }
+                    TextButton(onClick = { vm.clearBaseUrlOverride(); showPhysical = false; ipInput = "" }) {
+                        Text("Use default")
+                    }
+                }
+            }
+            // No override + toggle hidden — show the affordance.
+            else -> {
+                TextButton(onClick = { showPhysical = true }) { Text("Physical device?") }
             }
         }
     }

@@ -20,7 +20,7 @@ android {
         buildConfigField(
             "String",
             "BASE_URL",
-            "\"${(project.findProperty("BASE_URL_DEBUG") ?: "http://10.0.2.2:8000")}\""
+            "\"${(project.findProperty("BASE_URL_DEBUG") ?: "https://10.0.2.2/")}\""
         )
     }
     buildTypes {
@@ -28,7 +28,7 @@ android {
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"${(project.findProperty("BASE_URL_DEBUG") ?: "http://10.0.2.2:8000")}\""
+                "\"${(project.findProperty("BASE_URL_DEBUG") ?: "https://10.0.2.2/")}\""
             )
             isMinifyEnabled = false
         }
@@ -36,7 +36,7 @@ android {
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"${(project.findProperty("BASE_URL_RELEASE") ?: "http://10.0.2.2:8000")}\""
+                "\"${(project.findProperty("BASE_URL_RELEASE") ?: "https://10.0.2.2/")}\""
             )
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

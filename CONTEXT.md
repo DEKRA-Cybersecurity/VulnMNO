@@ -30,6 +30,17 @@ Stage 02 (API contract) is the workspace's central artifact: it is consumed by b
 | "Look up a component, role, entity or endpoint" | [shared/glossary.md](shared/glossary.md) |
 | "Set phase, ports, DB choice, build variants" | [setup/questionnaire.md](setup/questionnaire.md) |
 
+## Top-level READMEs — two audiences
+
+Two README files exist on purpose. Keep their scopes distinct and edit each at its own altitude.
+
+| File | Audience | Scope |
+| --- | --- | --- |
+| [README.md](README.md) | **Repo visitor on GitHub** — this is the landing page that renders on the project's GitHub front page. | Full overview: what VulnMNO is, phases 1–2 + lab hardening, workspace layout, quickstart, seed creds, the **training-lab vulnerability surface (M1/M3)**, gateway-driver matrix, troubleshooting table, and the MWP methodology one-pager. The first and most complete thing anyone reads. |
+| [src/README.md](src/README.md) | **Someone who just wants to run the lab.** | Short, practical operator steps only: start the stack (`up.sh`), trust the CA, build/install the Android app, Burp MITM, smoke checks, DB access. No project background, no phase history, no methodology. |
+
+When a change touches both (e.g. a new launch flag or workflow), put the **full context** in the root `README.md` and only the **bare practical step** in `src/README.md`. Don't let `src/README.md` grow into a second overview.
+
 ## Shared resources (Layer 3, used across stages)
 
 - [_config/tech-stack.md](_config/tech-stack.md) — locked dependency versions and stack decisions.

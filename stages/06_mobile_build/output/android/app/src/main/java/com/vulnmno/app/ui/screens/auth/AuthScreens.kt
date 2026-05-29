@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -13,6 +14,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
+import com.vulnmno.app.data.local.BaseUrlStore
 import com.vulnmno.app.data.repository.ApiResult
 import com.vulnmno.app.data.repository.AuthRepository
 import com.vulnmno.app.ui.navigation.AuthGate
@@ -22,8 +24,10 @@ import com.vulnmno.app.ui.screens.userMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -40,9 +44,15 @@ data class LoginUiState(
 )
 
 @HiltViewModel
-class LoginViewModel @Inject constructor(private val authRepo: AuthRepository) : ViewModel() {
+class LoginViewModel @Inject constructor(
+    private val authRepo: AuthRepository,
+    private val baseUrlStore: BaseUrlStore,
+) : ViewModel() {
     private val _state = MutableStateFlow(LoginUiState())
     val state: StateFlow<LoginUiState> = _state.asStateFlow()
+
+    val baseUrlOverride: StateFlow<String?> = baseUrlStore.overrideFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     sealed interface Event { data class GoOtp(val token: String) : Event; data object LoggedIn : Event }
     private val _events = MutableStateFlow<Event?>(null)
@@ -51,6 +61,12 @@ class LoginViewModel @Inject constructor(private val authRepo: AuthRepository) :
 
     fun onMsisdn(v: String) = _state.update { it.copy(msisdn = v, formError = null) }
     fun onPassword(v: String) = _state.update { it.copy(password = v, formError = null) }
+
+    fun setBaseUrlOverride(raw: String) = viewModelScope.launch {
+        val cleaned = raw.trim()
+        if (cleaned.isBlank()) baseUrlStore.clear() else baseUrlStore.set(cleaned)
+    }
+    fun clearBaseUrlOverride() = viewModelScope.launch { baseUrlStore.clear() }
 
     fun submit() = viewModelScope.launch {
         _state.update { it.copy(submitting = true, formError = null) }
@@ -69,7 +85,13 @@ class LoginViewModel @Inject constructor(private val authRepo: AuthRepository) :
 fun LoginScreen(nav: NavHostController, vm: LoginViewModel = hiltViewModel()) {
     val s by vm.state.collectAsState()
     val ev by vm.events.collectAsState()
+    val override by vm.baseUrlOverride.collectAsState()
     val gate: AuthGate = hiltViewModel()
+
+    var showPhysical by rememberSaveable { mutableStateOf(false) }
+    var ipInput by rememberSaveable { mutableStateOf("") }
+    LaunchedEffect(override) { if (override != null) ipInput = override.orEmpty() }
+
     LaunchedEffect(ev) {
         when (val e = ev) {
             is LoginViewModel.Event.GoOtp -> { nav.navigate(Routes.otp(e.token)); vm.consume() }
@@ -104,6 +126,63 @@ fun LoginScreen(nav: NavHostController, vm: LoginViewModel = hiltViewModel()) {
         s.formError?.let { Spacer(Modifier.height(8.dp)); Text(it, color = MaterialTheme.colorScheme.error) }
         Spacer(Modifier.height(8.dp))
         TextButton(onClick = { nav.navigate(Routes.pwResetRequest) }) { Text("Forgot password?") }
+
+        Spacer(Modifier.height(24.dp))
+        HorizontalDivider()
+        Spacer(Modifier.height(8.dp))
+
+        when {
+            // Toggle expanded — collect the IP. Wins over the "override active"
+            // branch so the user can edit a previously-set override (Change
+            // button below puts us here with `ipInput` pre-filled by the
+            // LaunchedEffect above).
+            showPhysical -> {
+                OutlinedTextField(
+                    value = ipInput, onValueChange = { ipInput = it },
+                    label = { Text("Backend host") },
+                    placeholder = { Text("192.168.1.42  (https/443 via Caddy)") },
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { vm.setBaseUrlOverride(ipInput); showPhysical = false },
+                        enabled = ipInput.isNotBlank(),
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Use this backend") }
+                    OutlinedButton(
+                        onClick = {
+                            showPhysical = false
+                            // Restore the field to the active override (if any)
+                            // so a future Change starts from the right value.
+                            ipInput = override.orEmpty()
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Cancel") }
+                }
+            }
+            // Override is active — show what we're hitting + how to edit / clear it.
+            override != null -> {
+                Text(
+                    "Backend: $override",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontFamily = FontFamily.Monospace,
+                )
+                Spacer(Modifier.height(4.dp))
+                Row {
+                    TextButton(onClick = { ipInput = override.orEmpty(); showPhysical = true }) { Text("Change") }
+                    TextButton(onClick = { vm.clearBaseUrlOverride(); showPhysical = false; ipInput = "" }) {
+                        Text("Use default")
+                    }
+                }
+            }
+            // No override + toggle hidden — show the affordance.
+            else -> {
+                TextButton(onClick = { showPhysical = true }) { Text("Physical device?") }
+            }
+        }
     }
 }
 

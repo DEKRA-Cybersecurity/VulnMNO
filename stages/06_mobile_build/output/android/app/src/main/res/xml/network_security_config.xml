@@ -1,8 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Stage 16 (HTTPS by default): the main / release policy forbids
+    cleartext for ALL destinations and trusts both system AND user-
+    installed CAs. The user-CA trust is what lets a trainee import the
+    Caddy local CA on the device and reach the backend via the TLS
+    reverse-proxy at https://10.0.2.2/ (emulator) or https://<lan-ip>/
+    (physical device).
+
+    Training-lab note: trusting `user` CAs in a release variant is a
+    deliberate weakness (no cert pinning) — it makes "import a malicious
+    CA + MITM" exercises possible. The release variant of a real-world
+    app would drop `<certificates src="user" />` and pin the leaf cert.
+    See src/docs/vulns/mobile/M3-Insecure-Authentication-Authorization.md.
+
+    The debug variant overrides this file with
+    src/debug/res/xml/network_security_config.xml, which keeps
+    `cleartextTrafficPermitted="true"` so M1 L3 (insecure credential
+    transmission) remains a discoverable static-analysis finding for
+    that build flavour.
+-->
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">10.0.2.2</domain>
-        <domain includeSubdomains="true">localhost</domain>
-        <domain includeSubdomains="true">127.0.0.1</domain>
-    </domain-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
 </network-security-config>

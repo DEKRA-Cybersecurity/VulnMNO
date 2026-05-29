@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     otp_ttl_seconds: int = 300
     otp_max_attempts: int = 5
     password_reset_ttl_seconds: int = 900
+    # Training-lab default: the password-reset code is deterministic so
+    # trainees can run the §9 "forgot password" journey without scraping
+    # log lines. Per-customer overrides are honoured via
+    # Customer.otp_fixed_code (the same field that pins the OTP login
+    # code). Set to "" to revert to a random 6-digit code per request.
+    password_reset_fixed_code: str = "123456"
     idempotency_ttl_seconds: int = 24 * 3600
 
     uploads_dir: Path = Path("./uploads")

@@ -23,4 +23,11 @@ RUN pip install --no-cache-dir \
     "httpx>=0.27"
 
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# --proxy-headers + --forwarded-allow-ips=* makes the access log record the
+# real client IP from X-Forwarded-For instead of the reverse-proxy's address.
+# Correct behind Caddy (it forwards the client), and it lets the traffic
+# simulator (scripts/simulate_traffic.py) attribute requests to distinct
+# per-user IPs in the log. Trusting XFF from anywhere is itself a lab-grade
+# weakness (a client hitting :8000 directly can forge its logged source IP).
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", \
+     "--proxy-headers", "--forwarded-allow-ips", "*"]

@@ -55,3 +55,11 @@ Thumbs.db
 # docs/VulnMNO.md and docs/MWP.md). The Markdown copies under docs/ are the
 # canonical, reviewable artefacts; the binaries stay local-only.
 /*.pdf
+
+# Traffic simulator outputs (scripts/simulate_traffic.py)
+traffic-groundtruth.json
+traffic.log
+
+# Claude Code agent tooling — local settings + cloned dev skills, not product.
+# Force-add .claude/skills/ if you ever want to share them with collaborators.
+.claude/

@@ -67,3 +67,37 @@ services:
       VULNMNO_DEFAULT_LOCALE: en
     ports:
       - "8000:8000"
+
+  # TLS reverse-proxy for the admin portal. Opt-in via the `tls` profile.
+  # Easiest: run `bash ../scripts/up.sh` — it auto-detects this host's LAN
+  # IP, writes docker/.env, and brings the stack up so HTTPS works on ANY
+  # network with no edits. Manual bring-up still works:
+  #     docker compose -f docker/docker-compose.yml --profile tls up -d
+  # Then point your browser at https://<host>/admin/login (accept the
+  # self-signed cert, or run scripts/install_caddy_ca.sh to import the
+  # Caddy local CA into your trust store). See
+  # stages/15_tls_termination/ for the full rationale.
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["tls"]
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # Which hosts/IPs Caddy issues TLS certs for, and which cert to serve
+      # to no-SNI clients. scripts/up.sh writes docker/.env with this host's
+      # detected LAN IP; the fallbacks here are network-independent so a
+      # bare `docker compose --profile tls up` works anywhere (same-machine
+      # browser via localhost + Android emulator via 10.0.2.2).
+      VULNMNO_TLS_HOSTS: ${VULNMNO_TLS_HOSTS:-localhost 127.0.0.1 10.0.2.2}
+      VULNMNO_DEFAULT_SNI: ${VULNMNO_DEFAULT_SNI:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

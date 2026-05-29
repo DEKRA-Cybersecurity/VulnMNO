@@ -188,23 +188,40 @@ The debug network security config sets:
 Two distinct M1 violations stack here:
 
 1. **`cleartextTrafficPermitted="true"` with no `<domain-config>` scoping.**
-   The app will speak plain HTTP to **any** host the runtime chooses —
-   including the `BaseUrlInterceptor` override the user types into the login
-   screen's "Physical device?" affordance. Combined with the
-   `BuildConfig.BASE_URL_DEBUG` default `http://10.0.2.2:8000`, every login
-   round-trip — `POST /api/v1/auth/login` with `{msisdn, password}` in the
-   body and `Authorization: Bearer …` on every authenticated request — is
-   carried in the clear on the local network.
-2. **`<certificates src="user" />` is trusted.** Any CA the user (or an
-   attacker who tricked the user) imported into the user trust store is
-   considered valid. This is the **single biggest reason MITM proxying still
-   works on Android 7+ debug builds**: drop the proxy's CA into user certs
-   and TLS interception is transparent.
+   The debug variant policy permits plain HTTP to **any** host the runtime
+   chooses — including whatever the user types into the login screen's
+   "Physical device?" affordance. **Stage 16 changed the compile-time
+   default to `BASE_URL_DEBUG=https://10.0.2.2/` so a fresh install no
+   longer leaks credentials over the wire**, but the *policy* still allows
+   the downgrade. Two ways for a trainee to actually trigger cleartext on
+   this build:
+   - **Runtime override → `http://` URL.** Type `192.168.1.42:8000` in
+     "Physical device?"; per the [`BaseUrlInterceptor`
+     truth table](#L3-runtime-truth-table), an explicit `:8000` is
+     interpreted as plain HTTP to the backend's direct port (the M3
+     downgrade path).
+   - **Rebuild with a build-time property.** `./gradlew assembleDebug
+     -PBASE_URL_DEBUG=http://192.168.1.42:8000` reverts the default. Or
+     edit `app/build.gradle.kts` directly.
+   In either case, the resulting traffic — `POST /api/auth/login` with
+   `{msisdn, password}` in the body and `Authorization: Bearer …` on every
+   authenticated request — flows in clear because the network security
+   policy never says "no".
+2. **`<certificates src="user" />` is trusted (debug *and* main since
+   stage 16).** Any CA the user (or an attacker who tricked the user)
+   imported into the user trust store is considered valid. This is the
+   **single biggest reason MITM proxying still works on Android 7+**:
+   drop the proxy's CA into user certs and TLS interception is
+   transparent. Stage 16 *intentionally* propagated this to the main
+   policy so trainees can install the Caddy local CA and reach the
+   backend over HTTPS — the cost is that the release variant is now
+   also susceptible to user-CA MITM (no certificate pinning).
 
-Even the "main" `network_security_config.xml` that ships in the release
-variant scopes cleartext to `10.0.2.2`, `localhost`, and `127.0.0.1` — which
-is fine for an emulator but still falls foul of M1 if a release build ever
-ends up shipped with this policy (verify it does not).
+The "main" / release `network_security_config.xml` (post stage 16)
+forbids cleartext entirely (`cleartextTrafficPermitted="false"`) and
+relies on TLS via the Caddy reverse-proxy. So in a release APK the L3
+exploit path collapses to "convince the victim to install a malicious
+CA" — still M1, but a noisier social-engineering step.
 
 ### How to find it (static analysis)
 
@@ -216,10 +233,27 @@ cat vulnmno-decoded/res/xml/network_security_config.xml
 
 Red flags to call out in the report:
 
-- `cleartextTrafficPermitted="true"` at the base-config level (unscoped).
-- `<certificates src="user" />` inside `<trust-anchors>`.
-- `android:usesCleartextTraffic="true"` on `<application>` (also present in
-  this build and supersedes nothing but signals intent).
+- `cleartextTrafficPermitted="true"` at the base-config level (unscoped)
+  — debug variant only since stage 16; main variant now explicitly says
+  `false`.
+- `<certificates src="user" />` inside `<trust-anchors>` — debug **and**
+  main since stage 16. The release APK is therefore MITM-able by any
+  user-installed CA, no cert pinning.
+- `android:usesCleartextTraffic="true"` on `<application>` — **removed in
+  stage 16**. If a forensic image of an older build still shows it,
+  flag it; current code does not declare it.
+
+<a id="L3-runtime-truth-table"></a>
+`BaseUrlInterceptor.normalize()` truth table (post stage 16) — the
+seam where the runtime override gets resolved into a concrete URL:
+
+| User types | Resolved URL | Effect on traffic |
+|---|---|---|
+| `192.168.1.42` | `https://192.168.1.42:443` | Goes through Caddy; encrypted. |
+| `192.168.1.42:443` | `https://192.168.1.42:443` | Same as above, explicit. |
+| `192.168.1.42:8000` | `http://192.168.1.42:8000` | **Cleartext**. Direct to backend, bypasses Caddy. The downgrade lab. |
+| `http://host[:port]` | as typed | **Cleartext** if no port-443 hint. |
+| `https://host[:port]` | as typed | Encrypted. |
 
 ### How to exploit (dynamic — MITM on local Wi-Fi)
 
@@ -276,12 +310,16 @@ Authorization: Bearer eyJhbGciOi...   <-- bearer in clear on every request
 
 ### Variations to try
 
-- **Without installing a CA.** If the backend is HTTP (not HTTPS) — and with
-  `BASE_URL_DEBUG=http://...` it is — you do not even need a CA. ARP spoof or
-  Wi-Fi rogue AP is enough; the bytes are already plain.
+- **Downgrade via the override.** Post stage 16 the default is HTTPS,
+  but typing `192.168.1.42:8000` in "Physical device?" reverts to plain
+  HTTP — no CA install required, ARP-spoof or rogue AP is enough.
+- **Rebuild downgrade.** `./gradlew assembleDebug
+  -PBASE_URL_DEBUG=http://192.168.1.42:8000` produces an APK that
+  defaults to cleartext. Trainees can also rewrite the literal in
+  `BuildConfig` after `apktool d` and re-pack.
 - **DNS rebinding via the override.** The "Physical device?" affordance
-  accepts any host the user types; coax a victim into pointing the app at an
-  attacker-controlled host and credentials are posted directly to the
+  accepts any host the user types; coax a victim into pointing the app at
+  an attacker-controlled host and credentials are posted directly to the
   attacker, no MITM needed.
 - **Logcat side-channel.** `HttpLoggingInterceptor.Level.BASIC` is enabled in
   debug, so request URLs and status codes also leak to `adb logcat` (raise

@@ -182,7 +182,15 @@ async def request_password_reset(session: AsyncSession, msisdn: str) -> None:
     ).scalar_one_or_none()
     if customer is None:
         return  # never leak existence
-    code = f"{secrets.randbelow(10**6):06d}"
+    # Training-lab default: deterministic reset code so trainees can run the
+    # §9 "forgot password" journey without scraping the backend logs for the
+    # random code. Resolution order:
+    #   1. customer.otp_fixed_code (per-customer pin, same field the OTP
+    #      login flow uses for the same purpose)
+    #   2. settings.password_reset_fixed_code (global lab default, "123456")
+    #   3. random — only if both are empty (set the setting to "" to opt in)
+    fixed = customer.otp_fixed_code or settings.password_reset_fixed_code
+    code = fixed if fixed else f"{secrets.randbelow(10**6):06d}"
     session.add(
         PasswordReset(
             customer_id=customer.id,
@@ -190,7 +198,7 @@ async def request_password_reset(session: AsyncSession, msisdn: str) -> None:
             expires_at=now() + timedelta(seconds=settings.password_reset_ttl_seconds),
         )
     )
-    log.info("PWRESET issued msisdn=%s code=%s", msisdn, code)
+    log.info("PWRESET issued msisdn=%s code=%s (fixed=%s)", msisdn, code, bool(fixed))
 
 
 async def confirm_password_reset(

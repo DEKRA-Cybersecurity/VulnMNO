@@ -1,0 +1,5 @@
+# Auto-generated per-network TLS config (written by scripts/up.sh).
+# Holds this machine's detected LAN IP — must NOT be committed, or the next
+# person to clone inherits the wrong IP. Ship .env.example instead.
+.env
+!.env.example

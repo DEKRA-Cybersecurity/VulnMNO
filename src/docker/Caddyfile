@@ -1,0 +1,58 @@
+# VulnMNO — Caddy reverse-proxy for the admin portal.
+#
+# Termination strategy: `tls internal` (Caddy's local CA). First request
+# triggers cert issuance for the requested SNI / IP literal; the root key
+# lives on the `caddy_data` named volume so it survives container restarts.
+#
+# Reasoning: the FastAPI backend sets `Secure` on the admin session cookie
+# whenever VULNMNO_ENV != "dev". Browsers refuse to store a Secure cookie
+# over http://, which broke the admin login. Putting this proxy in front
+# lets browsers reach the portal over https:// without changing any app
+# code; the backend continues to listen on plain HTTP inside the Docker
+# network.
+#
+# NETWORK-PORTABLE BY DESIGN — no IPs are hardcoded here. The only value
+# that changes per network is the host's LAN IP, and it's injected via two
+# env vars (see docker-compose.yml + scripts/up.sh, which auto-detects it):
+#
+#   VULNMNO_TLS_HOSTS    space-separated hosts/IPs to issue certs for
+#   VULNMNO_DEFAULT_SNI  cert served to clients that send no SNI
+#
+# The fallbacks below are network-independent (localhost + emulator only),
+# so a bare `docker compose up` still works on any machine with zero edits;
+# `scripts/up.sh` adds the detected LAN IP on top for physical-device / LAN
+# access.
+
+{
+    # Don't try to fetch from a public ACME issuer; everything here is local.
+    auto_https disable_redirects
+    # Tell Caddy that any host we're handed is fine for internal issuance.
+    local_certs
+    # Clients (curl, browsers) do NOT send SNI when the URL host is an IP
+    # literal (RFC 6066). Without SNI, Caddy can't pick a cert and serves
+    # this fallback. It MUST equal the IP/host typed in the laptop browser
+    # or the browser shows a SAN mismatch — so scripts/up.sh sets it to the
+    # detected LAN IP. Android sends SNI even for IP literals, so the
+    # emulator/phone ignore this and hit the site block below directly.
+    default_sni {$VULNMNO_DEFAULT_SNI:localhost}
+}
+
+# Hosts the lab is reached at. `tls internal` pre-issues a cert covering
+# each entry. The literal fallback is network-independent on purpose:
+#   localhost / 127.0.0.1  same-machine browser
+#   10.0.2.2               Android emulator -> host loopback (constant)
+# scripts/up.sh overrides VULNMNO_TLS_HOSTS with the detected LAN IP(s)
+# prepended, so a physical phone or a LAN peer is covered automatically.
+{$VULNMNO_TLS_HOSTS:localhost 127.0.0.1 10.0.2.2} {
+    tls internal
+
+    reverse_proxy backend:8000 {
+        header_up X-Forwarded-Proto https
+        header_up X-Real-IP         {remote_host}
+    }
+}
+
+# Plain HTTP → HTTPS redirect on the same hostname.
+:80 {
+    redir https://{hostport}{uri} 308
+}
