@@ -171,6 +171,35 @@ async def get_ticket(
     return _full(ticket, customer)
 
 
+@router.get("/tickets/by-reference/{ticketId}", response_model=TicketRead)
+async def get_ticket_by_reference(
+    ticketId: str,
+    customer: Annotated[Customer, Depends(get_current_customer)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """API1 training lab (OWASP API Security Top 10) — see
+    src/docs/vulns/api/API1-Broken-Object-Level-Authorization.md.
+    Deliberately drops the SupportTicket.customer_id == customer.id filter
+    that _load_ticket_full applies, so any authenticated customer can read
+    any other customer's ticket by public_id."""
+    ticket = (
+        await session.execute(
+            select(SupportTicket)
+            .where(SupportTicket.public_id == ticketId)
+            .options(
+                selectinload(SupportTicket.messages),
+                selectinload(SupportTicket.attachments),
+            )
+        )
+    ).scalar_one_or_none()
+    if ticket is None:
+        raise not_found("Ticket not found")
+    owner = (
+        await session.execute(select(Customer).where(Customer.id == ticket.customer_id))
+    ).scalar_one()
+    return _full(ticket, owner)
+
+
 async def _load_open_ticket(
     session: AsyncSession, customer: Customer, ticket_id: str
 ) -> SupportTicket:

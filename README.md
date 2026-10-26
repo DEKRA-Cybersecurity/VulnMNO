@@ -1,8 +1,8 @@
 # VulnMNO — phases 1 + 2 + lab hardening
 
-A fictional Mobile Network Operator platform built end-to-end (backend API + Android client + admin web portal) for training. Now with TLS termination via Caddy, HTTPS-by-default mobile client, and deliberately seeded M1/M3 mobile vulnerabilities for hacking labs. Product description: [docs/VulnMNO.md](docs/VulnMNO.md). Methodology: [docs/MWP.md](docs/MWP.md).
+A fictional Mobile Network Operator platform built end-to-end (backend API + Android client + admin web portal) for training. Now with TLS termination via Caddy, HTTPS-by-default mobile client, and deliberately seeded M1/M3 mobile vulnerabilities plus OWASP API Security Top 10 backend vulnerabilities for hacking labs. Product description: [docs/VulnMNO.md](docs/VulnMNO.md). Methodology: [docs/MWP.md](docs/MWP.md).
 
-> **Scope.** Phase 1 implements the six §9 customer journeys via a JWT-based mobile API. Phase 2 adds a Jinja2 + HTMX admin portal, payment/provisioning/FCM adapters, loyalty engine, refund approval, rate limiting, and i18n. Stages 14–16 add SIM swap + device registry + attachments (completeness), Caddy TLS termination, and HTTPS-by-default in the Android client. M1 / M3 vulnerabilities are intentional — see *Training-lab surface* below.
+> **Scope.** Phase 1 implements the six §9 customer journeys via a JWT-based mobile API. Phase 2 adds a Jinja2 + HTMX admin portal, payment/provisioning/FCM adapters, loyalty engine, refund approval, rate limiting, and i18n. Stages 14–16 add SIM swap + device registry + attachments (completeness), Caddy TLS termination, and HTTPS-by-default in the Android client. Stage 17 seeds all ten OWASP API Security Top 10 categories into the backend. M1 / M3 mobile and API1–API10 backend vulnerabilities are intentional — see *Training-lab surface* below.
 
 ## Workspace layout
 
@@ -14,6 +14,7 @@ VulnMNO/
 │   ├── mobile/android/             # Kotlin + Compose
 │   ├── docker/                     # Dockerfile + docker-compose.yml + Caddyfile
 │   ├── docs/vulns/mobile/          # M1 + M3 lab write-ups
+│   ├── docs/vulns/api/             # API2/API4/API6/API8 lab write-ups
 │   └── scripts/                    # smoke + Caddy CA install helpers
 └── stages/                         # MWP build history (contracts + artefacts)
     ├── 01_requirements              · 02_api_contract     · 03_data_model
@@ -22,7 +23,7 @@ VulnMNO/
     ├── 09_phase2_contract           · 10_phase2_data_model
     ├── 11_admin_portal_build        · 12_integrations_and_ops
     ├── 13_phase2_integration        · 14_completeness_passes
-    ├── 15_tls_termination           · 16_mobile_tls
+    ├── 15_tls_termination           · 16_mobile_tls       · 17_api_security_lab
 ```
 
 Each stage owns a `CONTEXT.md` (its contract), `references/` (constraints to internalize), and `output/` (artefacts of this run). Code lives in `src/` and is kept in sync with `stages/04/output/backend/` and `stages/06/output/android/` via `rsync` (excluding build artefacts). Never modify `docs/`.
@@ -114,6 +115,25 @@ Deliberate, documented vulnerabilities under `src/docs/vulns/mobile/`:
   - **L3.** Release variant trusts user-installed CAs (no cert pinning) — required for the Caddy local CA but leaves the door open to MITM via a malicious imported CA.
 
 Each write-up has static-analysis hints, dynamic exploitation steps (mitmproxy / adb / curl / asyncio PoC), blue-team detection queries, and a remediation diff.
+
+### API surface (OWASP API Security Top 10)
+
+All ten 2023 categories are **live** — implemented and verified against a
+running instance — under `src/docs/vulns/api/`, the backend-facing
+counterpart to the M1/M3 mobile labs above. See
+[stages/17_api_security_lab](stages/17_api_security_lab/) for the full
+mapping and how each was verified.
+
+- [API1 — Broken Object Level Authorization](src/docs/vulns/api/API1-Broken-Object-Level-Authorization.md)
+- [API2 — Broken Authentication](src/docs/vulns/api/API2-Broken-Authentication.md)
+- [API3 — Broken Object Property Level Authorization](src/docs/vulns/api/API3-Broken-Object-Property-Level-Authorization.md)
+- [API4 — Unrestricted Resource Consumption](src/docs/vulns/api/API4-Unrestricted-Resource-Consumption.md)
+- [API5 — Broken Function Level Authorization](src/docs/vulns/api/API5-Broken-Function-Level-Authorization.md)
+- [API6 — Unrestricted Access to Sensitive Business Flows](src/docs/vulns/api/API6-Unrestricted-Access-to-Sensitive-Business-Flows.md)
+- [API7 — Server Side Request Forgery](src/docs/vulns/api/API7-Server-Side-Request-Forgery.md)
+- [API8 — Security Misconfiguration](src/docs/vulns/api/API8-Security-Misconfiguration.md)
+- [API9 — Improper Inventory Management](src/docs/vulns/api/API9-Improper-Inventory-Management.md)
+- [API10 — Unsafe Consumption of APIs](src/docs/vulns/api/API10-Unsafe-Consumption-of-APIs.md)
 
 ## Gateway driver matrix (Phase 2)
 

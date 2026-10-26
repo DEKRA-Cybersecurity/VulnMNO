@@ -32,6 +32,11 @@ class ContactDetailsUpdate(ApiModel):
     email: str | None = None
     billingAddress: Address | None = None
     notificationPreferences: "NotificationPreferencesUpdate | None" = None
+    # API3 training lab (OWASP API Security Top 10) — see
+    # src/docs/vulns/api/API3-Broken-Object-Property-Level-Authorization.md.
+    # A business-controlled property wired into the self-service contact
+    # details write path with no authorization check gating it.
+    loyaltyTier: Literal["bronze", "silver", "gold", "platinum"] | None = None
 
 
 class MobileLineRead(ApiModel):

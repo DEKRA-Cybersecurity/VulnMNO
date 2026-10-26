@@ -16,7 +16,7 @@ WORKDIR /app/backend
 
 RUN pip install --no-cache-dir \
     "fastapi>=0.110" "uvicorn[standard]>=0.27" "python-multipart>=0.0.9" \
-    "sqlalchemy>=2.0" "alembic>=1.13" "aiosqlite>=0.19" "asyncpg>=0.29" \
+    "sqlalchemy[asyncio]>=2.0" "alembic>=1.13" "aiosqlite>=0.19" "asyncpg>=0.29" \
     "pydantic>=2.6" "pydantic-settings>=2.2" \
     "PyJWT>=2.8" "argon2-cffi>=23" \
     "jinja2>=3.1" "itsdangerous>=2.1" "slowapi>=0.1.9" "pyyaml>=6.0" \
