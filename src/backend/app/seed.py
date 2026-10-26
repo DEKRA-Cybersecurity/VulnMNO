@@ -177,7 +177,13 @@ async def seed_products(session: AsyncSession) -> dict[str, Product]:
 
 
 async def seed_promotions(session: AsyncSession) -> dict[str, Promotion]:
-    now = datetime(2026, 5, 1, tzinfo=UTC)
+    # Anchored to wall-clock time at seed time (not a fixed calendar date) so
+    # PROMO-SUMMER-2026's 120-day window stays valid regardless of when the
+    # DB is actually seeded — a hardcoded 2026-05-01 anchor made it silently
+    # expire on 2026-08-29, breaking the §9.2 promo-purchase journey, the
+    # test suite (test_shop.py::test_apply_promo_and_purchase), and the API6
+    # training lab's SUMMER20 demo once the host clock passed that date.
+    now = datetime.now(UTC)
     promos = {
         "PROMO-SUMMER-2026": dict(
             name="Summer Discount 2026",

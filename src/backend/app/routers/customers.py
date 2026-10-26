@@ -61,6 +61,10 @@ async def update_contact_details(
         for k, v in body.notificationPreferences.model_dump(exclude_none=True).items():
             prefs[k] = v
         customer.notification_preferences = prefs
+    if body.loyaltyTier is not None:
+        # API3 training lab — no authorization check gates this write; any
+        # authenticated customer can self-promote to any loyalty tier.
+        customer.loyalty_tier = body.loyaltyTier
     await session.flush()
     return _to_customer(customer)
 
@@ -185,3 +189,22 @@ async def sim_swap(
         oldSim=_sim_to_read(old_sim) if old_sim else _sim_to_read(new_sim),
         newSim=_sim_to_read(new_sim),
     )
+
+
+@router.get("/_debug/{customerId}")
+async def debug_dump_customer(
+    customerId: str,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """API9 training lab (OWASP API Security Top 10) — see
+    src/docs/vulns/api/API9-Improper-Inventory-Management.md.
+    Leftover debug route: no auth dependency, dumps raw ORM columns
+    (including password_hash / otp_fixed_code), and was never added to
+    stages/02_api_contract/output/openapi.yaml even though FastAPI still
+    serves it and lists it in the auto-generated /openapi.json."""
+    c = (
+        await session.execute(select(Customer).where(Customer.public_id == customerId))
+    ).scalar_one_or_none()
+    if c is None:
+        raise not_found("Customer not found")
+    return {col.name: getattr(c, col.name) for col in Customer.__table__.columns}

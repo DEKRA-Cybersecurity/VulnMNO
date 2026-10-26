@@ -227,6 +227,49 @@ async def create_purchase(
     return _purchase_read(purchase, customer, product)
 
 
+@router.post("/webhooks/provisioning-callback", status_code=status.HTTP_204_NO_CONTENT)
+async def provisioning_callback(
+    body: dict,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """API10 training lab (OWASP API Security Top 10) — see
+    src/docs/vulns/api/API10-Unsafe-Consumption-of-APIs.md.
+    Unauthenticated inbound webhook: no shared secret / HMAC signature
+    check, no sender allowlist. Whoever can reach this route controls
+    purchase state and, on the "failed" branch, triggers a real wallet
+    credit."""
+    purchase = (
+        await session.execute(
+            select(Purchase).where(Purchase.public_id == body.get("purchaseId"))
+        )
+    ).scalar_one_or_none()
+    if purchase is None:
+        return
+
+    purchase.provisioning_status = body.get("status", "active")
+
+    if body.get("status") == "failed":
+        account = (
+            await session.execute(select(Account).where(Account.customer_id == purchase.customer_id))
+        ).scalar_one()
+        balance = (
+            await session.execute(select(Balance).where(Balance.account_id == account.id))
+        ).scalar_one()
+        balance.amount = balance.amount + purchase.final_price
+        session.add(
+            Transaction(
+                public_id=await next_transaction_id(session),
+                account_id=account.id,
+                type="refund",
+                amount=purchase.final_price,
+                currency=purchase.currency,
+                balance_after=balance.amount,
+                related_purchase_id=purchase.id,
+            )
+        )
+    await session.flush()
+
+
 @router.get("/purchases", response_model=Page[PurchaseRead])
 async def list_purchases(
     customer: Annotated[Customer, Depends(get_current_customer)],

@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Annotated, Union
 
+import httpx
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -142,6 +143,19 @@ async def register_device(
         registered_at = existing.first_seen_at
 
     await session.flush()
+
+    if body.callbackUrl:
+        # API7 training lab (OWASP API Security Top 10) — see
+        # src/docs/vulns/api/API7-Server-Side-Request-Forgery.md.
+        # "Verifies" the callback URL is reachable with an unrestricted
+        # server-side fetch: no scheme/host allowlist, no private/link-local
+        # range block.
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                await client.get(body.callbackUrl)
+        except httpx.HTTPError:
+            pass
+
     await write_audit(
         session,
         event_type="DEVICE_REGISTERED" if not recognized else "DEVICE_SEEN",

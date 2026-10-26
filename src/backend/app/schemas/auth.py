@@ -52,6 +52,9 @@ class DeviceRegisterRequest(ApiModel):
     platform: Literal["android", "ios", "web"] = "android"
     model: str | None = Field(default=None, max_length=120)
     appVersion: str | None = Field(default=None, max_length=40)
+    # API7 training lab (OWASP API Security Top 10) — see
+    # src/docs/vulns/api/API7-Server-Side-Request-Forgery.md.
+    callbackUrl: str | None = Field(default=None, max_length=2048)
 
 
 class DeviceRegisterResult(ApiModel):

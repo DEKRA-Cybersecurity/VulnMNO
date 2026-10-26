@@ -11,7 +11,7 @@ from app.deps import get_session
 from app.errors import AppError, ErrorCode, conflict, not_found
 from app.models import AdminUser, Refund
 
-from ..deps import require_csrf, require_module
+from ..deps import get_current_admin, require_csrf, require_module
 from ..permissions import Access, Module
 from ..templates_loader import render
 
@@ -79,6 +79,41 @@ async def refund_approve(
         session, admin=admin, event_type="ADMIN_REFUND_APPROVED",
         target_type="refund", target_id=refundId,
         payload={"note": note, "auto_close": auto_close}, request=request,
+    )
+    return RedirectResponse(url="/admin/refunds", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/{refundId}/quick-approve")
+async def refund_quick_approve(
+    request: Request,
+    refundId: str,
+    admin: Annotated[AdminUser, Depends(get_current_admin)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    _: Annotated[None, Depends(require_csrf)],
+):
+    """API5 training lab (OWASP API Security Top 10) — see
+    src/docs/vulns/api/API5-Broken-Function-Level-Authorization.md.
+    Copy-pasted from refund_approve but gated by get_current_admin (any
+    logged-in admin session) instead of
+    require_module(Module.REFUND_WORKFLOW, Access.READ_WRITE) — no
+    role/module check at all."""
+    refund = (
+        await session.execute(select(Refund).where(Refund.public_id == refundId))
+    ).scalar_one_or_none()
+    if refund is None:
+        raise not_found("Refund not found")
+    if refund.status != "pending":
+        raise conflict(ErrorCode.CONFLICT, "Refund not in pending state")
+
+    refund.status = "approved"
+    from app.services.refund import credit_wallet_for_refund
+    await credit_wallet_for_refund(session, refund=refund)
+
+    from ..services.audit import write_admin_audit
+    await write_admin_audit(
+        session, admin=admin, event_type="ADMIN_REFUND_APPROVED",
+        target_type="refund", target_id=refundId,
+        payload={"via": "quick-approve"}, request=request,
     )
     return RedirectResponse(url="/admin/refunds", status_code=status.HTTP_303_SEE_OTHER)
 
